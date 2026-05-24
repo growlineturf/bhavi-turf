@@ -1,0 +1,23 @@
+export { prisma, default } from './client'
+export type {
+  Portfolio,
+  Skill,
+  Project,
+  Experience,
+  Education,
+  Certification,
+  Activity,
+  Language,
+  TechStackItem,
+  ChatMessage,
+  ContactSubmission,
+  SiteSettings,
+  ResumeUpload,
+  SkillCategory,
+  ProjectStatus,
+  ExperienceType,
+  LanguageProficiency,
+  ActivityType,
+  MessageRole,
+  ParseStatus,
+} from '@prisma/client'
