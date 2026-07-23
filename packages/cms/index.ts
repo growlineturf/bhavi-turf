@@ -2,19 +2,27 @@ import { del, put } from '@vercel/blob'
 import { cacheInvalidate, CacheKeys, TTL, withCache } from '@portfolio/cache'
 import { prisma } from '@portfolio/database'
 import {
+  activitySchema,
   certificationSchema,
   contactSchema,
+  educationSchema,
   experienceSchema,
   portfolioUpdateSchema,
   profileSchema,
   projectSchema,
+  settingsSchema,
   skillSchema,
+  techStackSchema,
+  type ActivityInput,
   type CertificationInput,
   type ContactInput,
+  type EducationInput,
   type ExperienceInput,
   type ProfileInput,
   type ProjectInput,
+  type SettingsInput,
   type SkillInput,
+  type TechStackInput,
 } from '@portfolio/validators'
 import {
   createHmac,
@@ -53,7 +61,7 @@ export type ActivityDTO = {
   title: string
   description: string
   type: string
-  year: number | null
+  year: string
 }
 
 export type TechStackDTO = {
@@ -69,8 +77,12 @@ export type EducationDTO = {
   field: string
   grade: string
   location: string
+  startYear: string
+  endYear: string
   period: string
 }
+
+export type SettingsDTO = SettingsInput
 
 export type PublicPortfolioDTO = {
   profile: PublicProfileDTO
@@ -81,6 +93,7 @@ export type PublicPortfolioDTO = {
   certifications: CertificationDTO[]
   activities: ActivityDTO[]
   techStack: TechStackDTO[]
+  settings: SettingsDTO
 }
 
 export type AdminPortfolioDTO = PublicPortfolioDTO
@@ -216,6 +229,10 @@ function mapPortfolio(data: Awaited<ReturnType<typeof getPortfolioRecord>>): Pub
       year: projectYear(project.startDate, project.endDate),
       githubUrl: project.githubUrl || '',
       liveUrl: project.liveUrl || '',
+      playStoreUrl: project.playStoreUrl || '',
+      platforms: project.platforms,
+      timeline: (project.timeline as ProjectInput['timeline']) ?? [],
+      team: (project.team as ProjectInput['team']) ?? [],
       featured: project.isFeatured,
     })),
     skills: portfolio.skills.map((skill) => ({
@@ -242,6 +259,8 @@ function mapPortfolio(data: Awaited<ReturnType<typeof getPortfolioRecord>>): Pub
       field: education.field,
       grade: education.grade || '',
       location: education.location || '',
+      startYear: education.startDate ? String(education.startDate.getFullYear()) : '',
+      endYear: education.endDate ? String(education.endDate.getFullYear()) : '',
       period: dateRange(education.startDate, education.endDate, education.isCurrent),
     })),
     certifications: portfolio.certifications.map((certification) => ({
@@ -250,19 +269,28 @@ function mapPortfolio(data: Awaited<ReturnType<typeof getPortfolioRecord>>): Pub
       issuer: certification.issuer,
       date: certification.displayDate || monthYear(certification.issuedDate),
       credentialUrl: certification.credentialUrl || '',
+      imageUrl: certification.imageUrl || '',
     })),
     activities: portfolio.activities.map((activity) => ({
       id: activity.id,
       title: activity.title,
       description: activity.description || '',
       type: activity.type,
-      year: activity.year,
+      year: activity.year != null ? String(activity.year) : '',
     })),
     techStack: portfolio.techStack.map((item) => ({
       id: item.id,
       name: item.name,
       iconSlug: item.iconSlug,
     })),
+    settings: {
+      openToWork: settings.openToWork,
+      availabilityText: settings.availabilityText,
+      contactFormEnabled: settings.contactFormEnabled,
+      chatbotEnabled: settings.chatbotEnabled,
+      chatbotName: settings.chatbotName,
+      chatbotGreeting: settings.chatbotGreeting,
+    },
   }
 }
 
@@ -355,6 +383,10 @@ export async function replaceProjects(input: ProjectInput[], slug = DEFAULT_SLUG
         startDate: dateFromYear(project.year),
         githubUrl: project.githubUrl || null,
         liveUrl: project.liveUrl || null,
+        playStoreUrl: project.playStoreUrl || null,
+        platforms: project.platforms,
+        timeline: project.timeline,
+        team: project.team,
         isFeatured: project.featured,
         displayOrder: index + 1,
       })),
@@ -426,6 +458,7 @@ export async function replaceCertifications(input: CertificationInput[], slug = 
         issuer: certification.issuer,
         displayDate: certification.date,
         credentialUrl: certification.credentialUrl || null,
+        imageUrl: certification.imageUrl || null,
         displayOrder: index + 1,
       })),
     })
@@ -435,13 +468,119 @@ export async function replaceCertifications(input: CertificationInput[], slug = 
   return getAdminPortfolio(slug)
 }
 
+export async function replaceEducation(input: EducationInput[], slug = DEFAULT_SLUG) {
+  const education = input.map((item) => educationSchema.parse(item))
+  const portfolio = await prisma.portfolio.findUniqueOrThrow({ where: { slug }, select: { id: true } })
+
+  await prisma.$transaction(async (tx) => {
+    await tx.education.deleteMany({ where: { portfolioId: portfolio.id } })
+    await tx.education.createMany({
+      data: education.map((item, index) => ({
+        portfolioId: portfolio.id,
+        institution: item.institution,
+        degree: item.degree,
+        field: item.field,
+        grade: item.grade || null,
+        location: item.location || null,
+        startDate: dateFromYear(item.startYear) || new Date(),
+        endDate: dateFromYear(item.endYear),
+        isCurrent: !item.endYear,
+        displayOrder: index + 1,
+      })),
+    })
+  })
+
+  await invalidatePortfolio(slug)
+  return getAdminPortfolio(slug)
+}
+
+export async function replaceActivities(input: ActivityInput[], slug = DEFAULT_SLUG) {
+  const activities = input.map((item) => activitySchema.parse(item))
+  const portfolio = await prisma.portfolio.findUniqueOrThrow({ where: { slug }, select: { id: true } })
+
+  await prisma.$transaction(async (tx) => {
+    await tx.activity.deleteMany({ where: { portfolioId: portfolio.id } })
+    await tx.activity.createMany({
+      data: activities.map((item, index) => ({
+        portfolioId: portfolio.id,
+        title: item.title,
+        description: item.description || null,
+        type: item.type,
+        year: item.year ? Number.parseInt(item.year, 10) || null : null,
+        displayOrder: index + 1,
+      })),
+    })
+  })
+
+  await invalidatePortfolio(slug)
+  return getAdminPortfolio(slug)
+}
+
+export async function replaceTechStack(input: TechStackInput[], slug = DEFAULT_SLUG) {
+  const items = input.map((item) => techStackSchema.parse(item))
+  const portfolio = await prisma.portfolio.findUniqueOrThrow({ where: { slug }, select: { id: true } })
+
+  await prisma.$transaction(async (tx) => {
+    await tx.techStackItem.deleteMany({ where: { portfolioId: portfolio.id } })
+    await tx.techStackItem.createMany({
+      data: items.map((item, index) => ({
+        portfolioId: portfolio.id,
+        name: item.name,
+        iconSlug: item.iconSlug || '',
+        displayOrder: index + 1,
+      })),
+    })
+  })
+
+  await invalidatePortfolio(slug)
+  return getAdminPortfolio(slug)
+}
+
+export async function updateSettings(input: SettingsInput, slug = DEFAULT_SLUG) {
+  const settings = settingsSchema.parse(input)
+  const data = {
+    openToWork: settings.openToWork,
+    availabilityText: settings.availabilityText || 'Open to Full-Time Roles',
+    contactFormEnabled: settings.contactFormEnabled,
+    chatbotEnabled: settings.chatbotEnabled,
+    chatbotName: settings.chatbotName || undefined,
+    chatbotGreeting: settings.chatbotGreeting || undefined,
+  }
+
+  const existing = await prisma.siteSettings.findFirst()
+  if (existing) {
+    await prisma.siteSettings.update({ where: { id: existing.id }, data })
+  } else {
+    await prisma.siteSettings.create({ data })
+  }
+
+  await invalidatePortfolio(slug)
+  return getAdminPortfolio(slug)
+}
+
+export async function getContactSubmissions(limit = 100) {
+  return prisma.contactSubmission.findMany({ orderBy: { createdAt: 'desc' }, take: limit })
+}
+
+export async function markContactRead(id: string, isRead = true) {
+  return prisma.contactSubmission.update({ where: { id }, data: { isRead } })
+}
+
+export async function deleteContactSubmission(id: string) {
+  return prisma.contactSubmission.delete({ where: { id } })
+}
+
 export async function updatePortfolio(input: unknown, slug = DEFAULT_SLUG) {
   const parsed = portfolioUpdateSchema.parse(input)
   if (parsed.profile) await updateProfile(parsed.profile, slug)
   if (parsed.projects) await replaceProjects(parsed.projects, slug)
   if (parsed.skills) await replaceSkills(parsed.skills, slug)
   if (parsed.experience) await replaceExperience(parsed.experience, slug)
+  if (parsed.education) await replaceEducation(parsed.education, slug)
   if (parsed.certifications) await replaceCertifications(parsed.certifications, slug)
+  if (parsed.activities) await replaceActivities(parsed.activities, slug)
+  if (parsed.techStack) await replaceTechStack(parsed.techStack, slug)
+  if (parsed.settings) await updateSettings(parsed.settings, slug)
   return getAdminPortfolio(slug)
 }
 

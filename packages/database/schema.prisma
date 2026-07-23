@@ -99,6 +99,10 @@ model Project {
   metricHighlights String[]  @default([])
   liveUrl      String?
   githubUrl    String?
+  playStoreUrl String?
+  platforms    String[]
+  timeline     Json?
+  team         Json?
   techStack    String[]
   tags         String[]
   status       ProjectStatus @default(COMPLETED)
@@ -189,6 +193,7 @@ model Certification {
   name          String
   issuer        String
   issuerLogoUrl String?
+  imageUrl      String?
   credentialUrl String?
   credentialId  String?
   displayDate   String?

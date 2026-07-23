@@ -32,6 +32,9 @@ export type Project = {
   githubUrl?: string
   liveUrl?: string
   playStoreUrl?: string
+  platforms?: string[]
+  timeline?: { phase: string; period?: string; detail?: string }[]
+  team?: { name: string; role?: string }[]
   featured?: boolean
 }
 

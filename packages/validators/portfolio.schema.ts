@@ -32,6 +32,25 @@ export const projectSchema = z.object({
   year: z.string().max(20).optional().default(''),
   githubUrl: z.string().url().optional().or(z.literal('')).default(''),
   liveUrl: z.string().url().optional().or(z.literal('')).default(''),
+  playStoreUrl: z.string().url().optional().or(z.literal('')).default(''),
+  platforms: z.array(z.string().min(1)).default([]),
+  timeline: z
+    .array(
+      z.object({
+        phase: z.string().min(1).max(120),
+        period: z.string().max(80).optional().default(''),
+        detail: z.string().max(400).optional().default(''),
+      })
+    )
+    .default([]),
+  team: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(120),
+        role: z.string().max(160).optional().default(''),
+      })
+    )
+    .default([]),
   featured: z.boolean().default(false),
 })
 
@@ -60,6 +79,41 @@ export const certificationSchema = z.object({
   issuer: z.string().min(1).max(180),
   date: z.string().max(80).optional().default(''),
   credentialUrl: z.string().url().optional().or(z.literal('')).default(''),
+  imageUrl: z.string().url().optional().or(z.literal('')).default(''),
+})
+
+export const educationSchema = z.object({
+  id: z.string().optional().default(''),
+  institution: z.string().min(1).max(200),
+  degree: z.string().min(1).max(200),
+  field: z.string().max(200).optional().default(''),
+  grade: z.string().max(80).optional().default(''),
+  location: z.string().max(160).optional().default(''),
+  startYear: z.string().max(10).optional().default(''),
+  endYear: z.string().max(10).optional().default(''),
+})
+
+export const activitySchema = z.object({
+  id: z.string().optional().default(''),
+  title: z.string().min(1).max(200),
+  description: z.string().max(600).optional().default(''),
+  type: z.enum(['HACKATHON', 'AWARD', 'PUBLICATION', 'VOLUNTEER', 'ACTIVITY', 'OTHER']).default('ACTIVITY'),
+  year: z.string().max(10).optional().default(''),
+})
+
+export const techStackSchema = z.object({
+  id: z.string().optional().default(''),
+  name: z.string().min(1).max(80),
+  iconSlug: z.string().max(80).optional().default(''),
+})
+
+export const settingsSchema = z.object({
+  openToWork: z.boolean().default(true),
+  availabilityText: z.string().max(180).optional().default(''),
+  contactFormEnabled: z.boolean().default(true),
+  chatbotEnabled: z.boolean().default(true),
+  chatbotName: z.string().max(120).optional().default(''),
+  chatbotGreeting: z.string().max(400).optional().default(''),
 })
 
 export const portfolioUpdateSchema = z.object({
@@ -67,11 +121,19 @@ export const portfolioUpdateSchema = z.object({
   projects: z.array(projectSchema).optional(),
   skills: z.array(skillSchema).optional(),
   experience: z.array(experienceSchema).optional(),
+  education: z.array(educationSchema).optional(),
   certifications: z.array(certificationSchema).optional(),
+  activities: z.array(activitySchema).optional(),
+  techStack: z.array(techStackSchema).optional(),
+  settings: settingsSchema.optional(),
 })
 
 export type ProfileInput = z.infer<typeof profileSchema>
 export type ProjectInput = z.infer<typeof projectSchema>
 export type SkillInput = z.infer<typeof skillSchema>
 export type ExperienceInput = z.infer<typeof experienceSchema>
+export type EducationInput = z.infer<typeof educationSchema>
 export type CertificationInput = z.infer<typeof certificationSchema>
+export type ActivityInput = z.infer<typeof activitySchema>
+export type TechStackInput = z.infer<typeof techStackSchema>
+export type SettingsInput = z.infer<typeof settingsSchema>

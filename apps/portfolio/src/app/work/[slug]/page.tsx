@@ -46,6 +46,10 @@ export default async function ProjectPage({ params }: Params) {
   const { projects } = await loadProjects()
   const others = projects.filter((item) => projectSlug(item.title) !== slug).slice(0, 2)
 
+  // Prefer live DB values, fall back to the static case-study detail
+  const timeline = (project.timeline?.length ? project.timeline : detail?.timeline) || []
+  const team = (project.team?.length ? project.team : detail?.team) || []
+
   const proof: Array<[string, string | undefined]> = [
     ['Problem', project.problem],
     ['Solution', project.solution],
@@ -136,13 +140,13 @@ export default async function ProjectPage({ params }: Params) {
               </div>
             </div>
 
-            {detail?.timeline?.length ? (
+            {timeline.length ? (
               <div className="detail-block">
                 <h2 className="detail-h2">
                   <CalendarDays size={20} /> Project timeline
                 </h2>
                 <ol className="timeline">
-                  {detail.timeline.map((phase) => (
+                  {timeline.map((phase) => (
                     <li key={phase.phase} className="timeline-item">
                       <span className="timeline-node" aria-hidden />
                       <div className="timeline-content">
@@ -180,13 +184,13 @@ export default async function ProjectPage({ params }: Params) {
               </div>
             </div>
 
-            {detail?.team?.length ? (
+            {team.length ? (
               <div className="side-card">
                 <span className="k">
                   <Users size={15} /> Team
                 </span>
                 <div className="team-list">
-                  {detail.team.map((member) => (
+                  {team.map((member) => (
                     <div key={member.name} className="team-member">
                       <span className="team-ava">
                         {member.name
