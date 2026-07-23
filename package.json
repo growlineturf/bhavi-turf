@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
+    "postinstall": "pnpm --filter @portfolio/database run db:generate",
     "dev": "turbo run dev",
     "dev:portfolio": "turbo run dev --filter=@portfolio/portfolio",
     "dev:admin": "turbo run dev --filter=@portfolio/admin",
