@@ -1,0 +1,20 @@
+{
+  "name": "@portfolio/cms",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@portfolio/cache": "workspace:*",
+    "@portfolio/database": "workspace:*",
+    "@portfolio/validators": "workspace:*",
+    "@vercel/blob": "^2.3.3",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5.8.3"
+  }
+}

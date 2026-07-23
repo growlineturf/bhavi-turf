@@ -89,11 +89,14 @@ model Project {
   portfolio    Portfolio     @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
   title        String
   slug         String        @unique
+  role         String?
   problem      String
   solution     String
+  outcome      String?
   description  String        @db.Text
   thumbnailUrl String?
   imageUrls    String[]
+  metricHighlights String[]  @default([])
   liveUrl      String?
   githubUrl    String?
   techStack    String[]
@@ -127,12 +130,13 @@ model Experience {
   role         String
   location     String?
   type         ExperienceType @default(INTERNSHIP)
+  period       String?
   description  String         @db.Text
   highlights   String[]
   techStack    String[]
   logoUrl      String?
   companyUrl   String?
-  startDate    DateTime
+  startDate    DateTime?
   endDate      DateTime?
   isCurrent    Boolean        @default(false)
   displayOrder Int            @default(0)
@@ -187,6 +191,7 @@ model Certification {
   issuerLogoUrl String?
   credentialUrl String?
   credentialId  String?
+  displayDate   String?
   issuedDate    DateTime?
   expiryDate    DateTime?
   displayOrder  Int       @default(0)
@@ -323,6 +328,20 @@ model SiteSettings {
   updatedAt          DateTime @updatedAt
 
   @@map("site_settings")
+}
+
+// ─────────────────────────────────────────────
+// ADMIN AUTH
+// ─────────────────────────────────────────────
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admin_users")
 }
 
 // ─────────────────────────────────────────────

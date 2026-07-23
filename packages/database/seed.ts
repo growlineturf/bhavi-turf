@@ -5,14 +5,22 @@ import {
   LanguageProficiency,
   ActivityType,
 } from '@prisma/client'
+import { randomBytes, scryptSync } from 'node:crypto'
 
 const prisma = new PrismaClient()
+
+function hashPassword(password: string) {
+  const salt = randomBytes(16).toString('hex')
+  const hash = scryptSync(password, salt, 64).toString('hex')
+  return `scrypt:${salt}:${hash}`
+}
 
 async function main() {
   console.log('🌱 Seeding database...')
 
   // Clean slate
   await prisma.siteSettings.deleteMany()
+  await prisma.adminUser.deleteMany()
   await prisma.portfolio.deleteMany()
 
   // ─── Portfolio + nested relations ───────────────────────────
@@ -58,25 +66,33 @@ async function main() {
           {
             title:       'ElevIQ — GenAI Personal Financial Assistant',
             slug:        'eleviq',
+            role:        'Full-stack developer - AI features, Firebase data model, and dashboard UI',
             problem:     'Managing personal finances is complex — most tools lack intelligent, personalized insights.',
             solution:    'Built an AI-powered finance assistant with OCR receipt analysis and Gemini-driven financial guidance.',
+            outcome:     'Converted manual receipt tracking into structured transactions and insight cards for faster financial decisions.',
             description: '## Overview\n\nElevIQ is a full-stack GenAI application that transforms how individuals track and understand their finances.\n\n## Key Features\n\n- **OCR Receipt Analysis** — Upload receipts; AI extracts structured data automatically\n- **AI Financial Insights** — Google Gemini for personalized, context-aware guidance\n- **Real-time Analytics** — Live dashboards with spending patterns and category breakdowns\n\n## Tech Stack\n\nTypeScript + Firebase for real-time sync, Google Gemini API for AI, React.js frontend.',
             techStack:   ['TypeScript', 'Firebase', 'Google Gemini', 'React.js', 'OCR API'],
             tags:        ['AI', 'Finance', 'Full-Stack', 'GenAI'],
+            metricHighlights: ['AI receipt parsing', 'Real-time dashboards', 'Personalized insights'],
             isFeatured:  true,
             displayOrder: 1,
+            startDate:   new Date('2025-01-01'),
             githubUrl:   'https://github.com/abarnasivakumar/eleviq',
           },
           {
             title:       'LetBuyy — E-Commerce Platform',
             slug:        'letbuyy',
+            role:        'Frontend and integration developer - shopping flow, auth, and payments',
             problem:     'Building a secure, feature-rich e-commerce experience with real payment integration is complex.',
             solution:    'Developed a complete React e-commerce app with cart, wishlist, Razorpay integration, and Firebase auth.',
+            outcome:     'Delivered a working shopping journey with persistent user state and payment-ready checkout flow.',
             description: '## Overview\n\nLetBuyy is a full-featured e-commerce web application providing a seamless shopping experience.\n\n## Key Features\n\n- **Product Catalog** — Browsable catalog with search and filter\n- **Cart & Wishlist** — Persistent cart management\n- **Razorpay Payments** — Secure payment integration with webhook handling\n- **Firebase Auth** — Secure user authentication\n\n## Tech Stack\n\nReact.js frontend with Firebase backend and Razorpay payment gateway.',
             techStack:   ['React.js', 'Firebase', 'Razorpay', 'JavaScript', 'CSS3'],
             tags:        ['E-Commerce', 'React', 'Payments'],
+            metricHighlights: ['Cart and wishlist flow', 'Firebase authentication', 'Razorpay checkout'],
             isFeatured:  true,
             displayOrder: 2,
+            startDate:   new Date('2024-01-01'),
             githubUrl:   'https://github.com/abarnasivakumar/letbuyy',
           },
         ],
@@ -91,6 +107,7 @@ async function main() {
             description: 'Completed hands-on internship on AWS cloud services covering core cloud concepts and infrastructure.',
             highlights:  ['Worked with EC2, S3, IAM, VPC, Lambda', 'Gained practical exposure to cloud deployment fundamentals', 'Completed AWS Cloud Training Program certification'],
             techStack:   ['AWS', 'EC2', 'S3', 'IAM', 'Lambda'],
+            period:      'Nov 2025 – Dec 2025',
             startDate:   new Date('2025-11-01'),
             endDate:     new Date('2025-12-31'),
             displayOrder: 1,
@@ -103,6 +120,7 @@ async function main() {
             description: 'Developed Java backend modules and collaborated in an Agile development environment.',
             highlights:  ['Developed Java backend modules using OOP principles', 'Collaborated in Agile sprints with daily standups', 'Wrote unit tests and participated in code reviews'],
             techStack:   ['Java', 'OOP', 'Agile', 'Git'],
+            period:      'Feb 2024 – Mar 2024',
             startDate:   new Date('2024-02-01'),
             endDate:     new Date('2024-03-31'),
             displayOrder: 2,
@@ -128,10 +146,10 @@ async function main() {
 
       certifications: {
         create: [
-          { name: 'AWS Cloud Training Program',    issuer: 'iStudio / Amazon Web Services', displayOrder: 1 },
-          { name: 'Cloud Computing',               issuer: 'NPTEL',                          displayOrder: 2 },
-          { name: 'Introduction to Generative AI', issuer: 'IBM SkillsBuild',                displayOrder: 3 },
-          { name: 'Cyber Security Fundamentals',   issuer: 'IBM SkillsBuild',                displayOrder: 4 },
+          { name: 'AWS Cloud Training Program',    issuer: 'iStudio / Amazon Web Services', displayDate: 'Dec 2025', displayOrder: 1 },
+          { name: 'Cloud Computing',               issuer: 'NPTEL',                         displayDate: '2024',     displayOrder: 2 },
+          { name: 'Introduction to Generative AI', issuer: 'IBM SkillsBuild',               displayDate: '2024',     displayOrder: 3 },
+          { name: 'Cyber Security Fundamentals',   issuer: 'IBM SkillsBuild',               displayDate: '2024',     displayOrder: 4 },
         ],
       },
 
@@ -178,6 +196,13 @@ async function main() {
       availabilityText:   'Open to full-time opportunities from 2026',
       chatbotName:        'Ask about Abarna',
       chatbotGreeting:    "Hi! I'm an AI assistant. Ask me anything about Abarna's skills, projects, or experience.",
+    },
+  })
+
+  await prisma.adminUser.create({
+    data: {
+      email: 'admin@portfolio.local',
+      passwordHash: hashPassword(process.env.ADMIN_PASSWORD || 'admin123'),
     },
   })
 

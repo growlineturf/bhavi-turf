@@ -4,7 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "turbo run dev",
+    "dev:portfolio": "turbo run dev --filter=@portfolio/portfolio",
+    "dev:admin": "turbo run dev --filter=@portfolio/admin",
     "build": "turbo run build",
+    "build:portfolio": "turbo run build --filter=@portfolio/portfolio",
+    "build:admin": "turbo run build --filter=@portfolio/admin",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "db:generate": "turbo run db:generate --filter=@portfolio/database",
