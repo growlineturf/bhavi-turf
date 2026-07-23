@@ -1,13 +1,22 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { stackServerApp, isAllowedAdmin } from '@/stack'
+import { AUTH_DISABLED, stackServerApp, isAllowedAdmin } from '@/stack'
 import DashboardShell from './DashboardShell'
 
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
+  // Local dev without Neon Auth env → skip sign-in entirely.
+  if (AUTH_DISABLED) {
+    return (
+      <DashboardShell userEmail="Local preview" authDisabled>
+        {children}
+      </DashboardShell>
+    )
+  }
+
   // Redirects to /handler/sign-in when not signed in.
-  const user = await stackServerApp.getUser({ or: 'redirect' })
+  const user = await stackServerApp!.getUser({ or: 'redirect' })
 
   // Signed in but not on the allowlist → deny (no portfolio access).
   if (!isAllowedAdmin(user.primaryEmail)) {

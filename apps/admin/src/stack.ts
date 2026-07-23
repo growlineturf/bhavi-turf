@@ -2,19 +2,31 @@ import 'server-only'
 import { StackServerApp } from '@stackframe/stack'
 
 /**
- * Neon Auth (Stack Auth) server app.
- * Reads NEXT_PUBLIC_STACK_PROJECT_ID, NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY,
+ * Local-dev escape hatch. When the Neon Auth (Stack Auth) env is absent in a
+ * NON-production environment, the admin runs without authentication so it can be
+ * previewed against a local database. In production the env is required —
+ * `StackServerApp` throws at construction if it's missing — so this never
+ * weakens the deployed site.
+ */
+export const AUTH_DISABLED =
+  process.env.NODE_ENV !== 'production' && !process.env.NEXT_PUBLIC_STACK_PROJECT_ID
+
+/**
+ * Neon Auth (Stack Auth) server app, or `null` when auth is disabled for local
+ * dev. Reads NEXT_PUBLIC_STACK_PROJECT_ID, NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY,
  * and STACK_SECRET_SERVER_KEY from the environment.
  */
-export const stackServerApp = new StackServerApp({
-  tokenStore: 'nextjs-cookie',
-  urls: {
-    signIn: '/handler/sign-in',
-    afterSignIn: '/',
-    afterSignUp: '/',
-    afterSignOut: '/handler/sign-in',
-  },
-})
+export const stackServerApp = AUTH_DISABLED
+  ? null
+  : new StackServerApp({
+      tokenStore: 'nextjs-cookie',
+      urls: {
+        signIn: '/handler/sign-in',
+        afterSignIn: '/',
+        afterSignUp: '/',
+        afterSignOut: '/handler/sign-in',
+      },
+    })
 
 /**
  * Allowlist — the admin only opens for these emails, even though Neon Auth

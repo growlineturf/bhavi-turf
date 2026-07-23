@@ -1,11 +1,28 @@
 import { z } from 'zod'
 
+/**
+ * Image references may be a full http(s) URL OR a root-relative public path
+ * (e.g. "/eleviq-cover.png"), since assets live in each app's /public folder.
+ */
+const isUrlOrPath = (v: string) => v === '' || /^https?:\/\//i.test(v) || v.startsWith('/')
+const imageRef = z
+  .string()
+  .trim()
+  .refine(isUrlOrPath, 'Must be a URL or a root-relative path starting with "/"')
+  .optional()
+  .default('')
+const imageRefItem = z
+  .string()
+  .trim()
+  .min(1)
+  .refine((v) => /^https?:\/\//i.test(v) || v.startsWith('/'), 'Must be a URL or a path starting with "/"')
+
 export const profileSchema = z.object({
   name: z.string().min(2).max(120),
   title: z.string().min(2).max(160),
   tagline: z.string().min(2).max(220),
   summary: z.string().min(10).max(2000),
-  avatarUrl: z.string().url().optional().or(z.literal('')).default(''),
+  avatarUrl: imageRef,
   email: z.string().email(),
   phone: z.string().max(50).optional().default(''),
   location: z.string().min(2).max(160),
@@ -18,16 +35,16 @@ export const profileSchema = z.object({
 export const projectSchema = z.object({
   id: z.string().optional().default(''),
   title: z.string().min(2).max(180),
-  role: z.string().max(180).optional().default(''),
+  role: z.string().max(400).optional().default(''),
   problem: z.string().max(500).optional().default(''),
   solution: z.string().max(500).optional().default(''),
   outcome: z.string().max(500).optional().default(''),
   description: z.string().max(6000).optional().default(''),
-  thumbnailUrl: z.string().url().optional().or(z.literal('')).default(''),
-  imageUrls: z.array(z.string().url()).default([]),
+  thumbnailUrl: imageRef,
+  imageUrls: z.array(imageRefItem).default([]),
   techStack: z.array(z.string().min(1)).default([]),
   tags: z.array(z.string().min(1)).default([]),
-  metricHighlights: z.array(z.string().min(1).max(140)).default([]),
+  metricHighlights: z.array(z.string().min(1).max(240)).default([]),
   status: z.enum(['COMPLETED', 'IN_PROGRESS', 'ARCHIVED']).default('COMPLETED'),
   year: z.string().max(20).optional().default(''),
   githubUrl: z.string().url().optional().or(z.literal('')).default(''),
@@ -79,7 +96,7 @@ export const certificationSchema = z.object({
   issuer: z.string().min(1).max(180),
   date: z.string().max(80).optional().default(''),
   credentialUrl: z.string().url().optional().or(z.literal('')).default(''),
-  imageUrl: z.string().url().optional().or(z.literal('')).default(''),
+  imageUrl: imageRef,
 })
 
 export const educationSchema = z.object({
