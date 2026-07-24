@@ -1,8 +1,6 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { Poppins } from 'next/font/google'
-import { StackProvider, StackTheme } from '@stackframe/stack'
-import { stackServerApp } from '@/stack'
 import './admin.css'
 
 const poppins = Poppins({
@@ -20,15 +18,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={poppins.variable}>
-      <body>
-        {stackServerApp ? (
-          <StackProvider app={stackServerApp}>
-            <StackTheme>{children}</StackTheme>
-          </StackProvider>
-        ) : (
-          children
-        )}
-      </body>
+      <body>{children}</body>
     </html>
   )
 }

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
-import { AUTH_DISABLED, stackServerApp, isAllowedAdmin } from '@/stack'
+import { AUTH_DISABLED, auth, isAllowedAdmin } from '@/lib/auth/server'
 
 /** True only when a signed-in Neon Auth user is on the admin allowlist. */
 export async function isAdminAuthenticated() {
   if (AUTH_DISABLED) return true
   try {
-    const user = await stackServerApp!.getUser()
-    return Boolean(user && isAllowedAdmin(user.primaryEmail))
+    const { data: session } = await auth!.getSession()
+    return Boolean(session?.user && isAllowedAdmin(session.user.email))
   } catch {
     return false
   }

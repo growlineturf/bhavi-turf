@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "admin",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@portfolio/admin", "run", "dev"],
+      "port": 3001
+    },
+    {
+      "name": "portfolio",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@portfolio/portfolio", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}

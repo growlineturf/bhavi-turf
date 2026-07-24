@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { useUser } from '@stackframe/stack'
+import SignOutButton from '@/components/sign-out-button'
 import {
   Activity,
   Award,
@@ -14,7 +14,6 @@ import {
   FolderGit2,
   GraduationCap,
   LayoutDashboard,
-  LogOut,
   Mail,
   Menu,
   Settings,
@@ -141,15 +140,5 @@ export default function DashboardShell({
 
       <style>{`@media (max-width: 860px){[data-mobile-toggle]{display:grid !important;}}`}</style>
     </div>
-  )
-}
-
-/** Only rendered when Neon Auth is enabled (a StackProvider is present). */
-function SignOutButton() {
-  const user = useUser()
-  return (
-    <button type="button" className="btn btn-sm btn-danger" onClick={() => user?.signOut()}>
-      <LogOut size={15} /> Sign Out
-    </button>
   )
 }

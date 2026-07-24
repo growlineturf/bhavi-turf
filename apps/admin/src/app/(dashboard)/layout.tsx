@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
-import Link from 'next/link'
-import { AUTH_DISABLED, stackServerApp, isAllowedAdmin } from '@/stack'
+import { redirect } from 'next/navigation'
+import { AUTH_DISABLED, auth, isAllowedAdmin } from '@/lib/auth/server'
+import SignOutButton from '@/components/sign-out-button'
 import DashboardShell from './DashboardShell'
 
 export const dynamic = 'force-dynamic'
@@ -15,27 +16,27 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     )
   }
 
-  // Redirects to /handler/sign-in when not signed in.
-  const user = await stackServerApp!.getUser({ or: 'redirect' })
+  const { data: session } = await auth!.getSession()
+
+  // Not signed in → send to the sign-in page.
+  if (!session?.user) redirect('/auth/sign-in')
 
   // Signed in but not on the allowlist → deny (no portfolio access).
-  if (!isAllowedAdmin(user.primaryEmail)) {
+  if (!isAllowedAdmin(session.user.email)) {
     return (
       <div className="auth-screen">
         <div className="auth-card">
           <span className="auth-mark">AS</span>
           <h1>Access restricted</h1>
           <p>
-            You&apos;re signed in as <b>{user.primaryEmail}</b>, but this account isn&apos;t authorised
+            You&apos;re signed in as <b>{session.user.email}</b>, but this account isn&apos;t authorised
             to manage the portfolio.
           </p>
-          <Link href="/handler/sign-out" className="btn btn-dark" style={{ width: '100%' }}>
-            Sign out
-          </Link>
+          <SignOutButton className="btn btn-dark" />
         </div>
       </div>
     )
   }
 
-  return <DashboardShell userEmail={user.primaryEmail || ''}>{children}</DashboardShell>
+  return <DashboardShell userEmail={session.user.email || ''}>{children}</DashboardShell>
 }
