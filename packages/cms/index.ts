@@ -131,6 +131,30 @@ function assertDatabaseConfigured() {
   }
 }
 
+/**
+ * Retry a query when the DB connection is momentarily unavailable — Neon scales
+ * compute to zero when idle, so the first request after a pause can hit the
+ * server mid-wake (P1001 / PrismaClientInitializationError). Only connection
+ * errors are retried; everything else throws immediately.
+ */
+async function withDbRetry<T>(fn: () => Promise<T>, tries = 3): Promise<T> {
+  let lastErr: unknown
+  for (let attempt = 0; attempt < tries; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastErr = err
+      const isConnError =
+        err instanceof Error &&
+        (err.name === 'PrismaClientInitializationError' ||
+          /P1001|Can't reach database server|Connection terminated|ECONNREFUSED/i.test(err.message))
+      if (!isConnError || attempt === tries - 1) throw err
+      await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)))
+    }
+  }
+  throw lastErr
+}
+
 function splitName(name: string) {
   const parts = name.trim().split(/\s+/)
   const firstName = parts[0] || name.trim()
@@ -171,21 +195,23 @@ async function getSettings() {
 async function getPortfolioRecord(slug = DEFAULT_SLUG) {
   assertDatabaseConfigured()
 
-  const [portfolio, settings] = await Promise.all([
-    prisma.portfolio.findUnique({
-      where: { slug },
-      include: {
-        skills: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] },
-        projects: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] },
-        experiences: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }] },
-        educations: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] },
-        certifications: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] },
-        activities: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] },
-        techStack: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] },
-      },
-    }),
-    getSettings(),
-  ])
+  const [portfolio, settings] = await withDbRetry(() =>
+    Promise.all([
+      prisma.portfolio.findUnique({
+        where: { slug },
+        include: {
+          skills: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] },
+          projects: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] },
+          experiences: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }] },
+          educations: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] },
+          certifications: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] },
+          activities: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] },
+          techStack: { orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] },
+        },
+      }),
+      getSettings(),
+    ])
+  )
 
   if (!portfolio) throw new Error(`Portfolio "${slug}" was not found`)
   return { portfolio, settings }
@@ -635,10 +661,12 @@ export async function saveAsset(file: File): Promise<AssetMeta> {
 }
 
 export async function getAsset(id: string) {
-  return prisma.asset.findUnique({
-    where: { id },
-    select: { data: true, mimeType: true, filename: true },
-  })
+  return withDbRetry(() =>
+    prisma.asset.findUnique({
+      where: { id },
+      select: { data: true, mimeType: true, filename: true },
+    })
+  )
 }
 
 /** Pull the asset id out of a `/api/assets/<id>.<ext>` URL (null for static/external URLs). */

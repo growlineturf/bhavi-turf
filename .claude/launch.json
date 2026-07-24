@@ -10,8 +10,8 @@
     {
       "name": "portfolio",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@portfolio/portfolio", "exec", "next", "dev", "--port", "3002"],
-      "port": 3002
+      "runtimeArgs": ["--filter", "@portfolio/portfolio", "run", "dev"],
+      "port": 3000
     }
   ]
 }
