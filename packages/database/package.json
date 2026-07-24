@@ -5,6 +5,7 @@
   "scripts": {
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
     "db:seed": "npx tsx seed.ts",
     "db:studio": "prisma studio",
     "type-check": "tsc --noEmit"

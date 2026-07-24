@@ -31,13 +31,15 @@ async function main() {
       location: 'Salem, Tamil Nadu',
       linkedinUrl: 'https://www.linkedin.com/in/abarna-sivakumar0115',
       githubUrl: 'https://github.com/Abarna-SA',
+      avatarUrl: '/portrait.jpg',
+      resumeUrl: '/resume.pdf',
       seoTitle: 'Abarna Sivakumar — AI & Full-Stack Developer',
       seoDescription:
         'Portfolio of Abarna Sivakumar, AI & Data Science engineer building AI-integrated full-stack applications across cybersecurity, fintech and e-commerce.',
 
       skills: {
         create: [
-          { name: 'Java', category: SkillCategory.LANGUAGE, proficiency: 85, iconSlug: 'java', isHighlighted: true, displayOrder: 1 },
+          { name: 'Java', category: SkillCategory.LANGUAGE, proficiency: 85, iconSlug: 'openjdk', isHighlighted: true, displayOrder: 1 },
           { name: 'Python', category: SkillCategory.LANGUAGE, proficiency: 80, iconSlug: 'python', isHighlighted: true, displayOrder: 2 },
           { name: 'JavaScript', category: SkillCategory.LANGUAGE, proficiency: 78, iconSlug: 'javascript', displayOrder: 3 },
           { name: 'TypeScript', category: SkillCategory.LANGUAGE, proficiency: 72, iconSlug: 'typescript', displayOrder: 4 },
