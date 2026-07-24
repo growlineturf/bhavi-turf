@@ -9,19 +9,28 @@ import { createNeonAuth } from '@neondatabase/auth/next/server'
  */
 export const AUTH_DISABLED = process.env.NODE_ENV !== 'production' && !process.env.NEON_AUTH_BASE_URL
 
+type NeonAuth = ReturnType<typeof createNeonAuth>
+let cached: NeonAuth | null | undefined
+
 /**
  * Neon Auth (Managed Better Auth) server instance, or `null` when auth is
- * disabled for local dev. Provides `.handler()`, `.middleware()`,
- * `.getSession()`, `.signIn`, `.signUp`, `.signOut`, etc.
+ * disabled for local dev. Constructed lazily on first use so it never runs
+ * during `next build` page-data collection (which would otherwise require the
+ * env at build time). Provides `.handler()`, `.getSession()`, `.signIn`,
+ * `.signUp`, `.signOut`, etc.
  */
-export const auth = AUTH_DISABLED
-  ? null
-  : createNeonAuth({
+export function getAuth(): NeonAuth | null {
+  if (AUTH_DISABLED) return null
+  if (cached === undefined) {
+    cached = createNeonAuth({
       baseUrl: process.env.NEON_AUTH_BASE_URL!,
       cookies: {
         secret: process.env.NEON_AUTH_COOKIE_SECRET!,
       },
     })
+  }
+  return cached
+}
 
 /**
  * Allowlist — only these emails may access the admin, even though Neon Auth

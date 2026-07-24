@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { redirect } from 'next/navigation'
-import { AUTH_DISABLED, auth, isAllowedAdmin } from '@/lib/auth/server'
+import { AUTH_DISABLED, getAuth, isAllowedAdmin } from '@/lib/auth/server'
 import SignOutButton from '@/components/sign-out-button'
 import DashboardShell from './DashboardShell'
 
@@ -16,7 +16,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     )
   }
 
-  const { data: session } = await auth!.getSession()
+  const auth = getAuth()!
+  const { data: session } = await auth.getSession()
 
   // Not signed in → send to the sign-in page.
   if (!session?.user) redirect('/auth/sign-in')

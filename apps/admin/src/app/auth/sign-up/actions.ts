@@ -1,9 +1,10 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { auth, isAllowedAdmin } from '@/lib/auth/server'
+import { getAuth, isAllowedAdmin } from '@/lib/auth/server'
 
 export async function signUpWithEmail(_prev: { error: string } | null, formData: FormData) {
+  const auth = getAuth()
   if (!auth) redirect('/')
 
   const email = String(formData.get('email') || '').trim()
