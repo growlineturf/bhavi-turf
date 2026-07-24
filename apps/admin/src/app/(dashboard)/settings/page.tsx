@@ -18,7 +18,7 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <PageHead title="Site settings" sub="Availability banner, contact form and the AI assistant." />
+      <PageHead title="Site settings" sub="Availability banner and contact form." />
 
       {loading ? (
         <LoadingState rows={5} />
@@ -44,23 +44,6 @@ export default function SettingsPage() {
             </div>
             <div className="form">
               <Toggle checked={data.contactFormEnabled} onChange={(v) => set('contactFormEnabled', v)} label="Enable contact form" hint="Visitors can send you messages, collected in the Messages inbox." />
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-head">
-              <h2 className="card-title">AI assistant</h2>
-            </div>
-            <div className="form">
-              <Toggle checked={data.chatbotEnabled} onChange={(v) => set('chatbotEnabled', v)} label="Enable AI assistant" hint="A floating chatbot that answers recruiter questions about you." />
-              <div className="field-row">
-                <Field label="Assistant name">
-                  <input className="input" value={data.chatbotName} onChange={(e) => set('chatbotName', e.target.value)} placeholder="Abarna's Assistant" />
-                </Field>
-              </div>
-              <Field label="Greeting message">
-                <textarea className="textarea" rows={3} value={data.chatbotGreeting} onChange={(e) => set('chatbotGreeting', e.target.value)} placeholder="Hi! Ask me anything about Abarna's experience, projects or skills." />
-              </Field>
             </div>
           </div>
 

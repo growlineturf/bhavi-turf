@@ -87,7 +87,8 @@ export default function MessagesPage() {
         <div className="empty">No messages yet. Submissions from your contact form will appear here.</div>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <table className="table">
+          <div className="table-scroll">
+          <table className="table" style={{ minWidth: 560 }}>
             <thead>
               <tr>
                 <th style={{ width: 40 }} />
@@ -133,6 +134,7 @@ export default function MessagesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

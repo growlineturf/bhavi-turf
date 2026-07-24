@@ -108,6 +108,8 @@ export default function DashboardShell({
         </div>
       </aside>
 
+      {open && <div className="admin-scrim" onClick={() => setOpen(false)} aria-hidden />}
+
       <div className="admin-main">
         <header className="admin-topbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -131,7 +133,7 @@ export default function DashboardShell({
             <span className="admin-live">
               <span className="dot" /> Live
             </span>
-            <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>{userEmail}</span>
+            <span className="admin-user-email" style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>{userEmail}</span>
           </div>
         </header>
 
