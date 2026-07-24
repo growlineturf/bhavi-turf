@@ -1,6 +1,7 @@
 'use client'
 
 import { ErrorState, Field, LoadingState, PageHead, SaveBar, Toggle, useSection } from '@/components/editor-kit'
+import { FileUpload } from '@/components/file-upload'
 
 type Profile = {
   name: string
@@ -51,8 +52,8 @@ export default function ProfilePage() {
               <Field label="Summary" hint="2–3 sentences. Appears in the About section.">
                 <textarea className="textarea" rows={4} value={data.summary} onChange={(e) => set('summary', e.target.value)} />
               </Field>
-              <Field label="Avatar / portrait image URL" hint="Leave blank to use the built-in portrait.">
-                <input className="input" value={data.avatarUrl} onChange={(e) => set('avatarUrl', e.target.value)} placeholder="https://…" />
+              <Field label="Avatar / portrait image" hint="Upload a portrait. Leave empty to use the built-in image.">
+                <FileUpload value={data.avatarUrl} onChange={(v) => set('avatarUrl', v)} accept="image/*" kind="image" />
               </Field>
             </div>
           </div>

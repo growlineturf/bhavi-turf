@@ -1,6 +1,7 @@
 'use client'
 
 import { ErrorState, Field, ListEditor, LoadingState, PageHead, SaveBar, useSection } from '@/components/editor-kit'
+import { FileUpload } from '@/components/file-upload'
 
 type Certification = {
   id: string
@@ -47,8 +48,8 @@ export default function CertificationsPage() {
                     <Field label="Date">
                       <input className="input" value={cert.date} onChange={(e) => patch({ date: e.target.value })} placeholder="Mar 2025" />
                     </Field>
-                    <Field label="Badge image URL">
-                      <input className="input" value={cert.imageUrl} onChange={(e) => patch({ imageUrl: e.target.value })} placeholder="https://…" />
+                    <Field label="Badge image">
+                      <FileUpload value={cert.imageUrl} onChange={(v) => patch({ imageUrl: v })} accept="image/*" kind="image" />
                     </Field>
                     <Field label="Credential URL" full>
                       <input className="input" value={cert.credentialUrl} onChange={(e) => patch({ credentialUrl: e.target.value })} placeholder="https://…" />

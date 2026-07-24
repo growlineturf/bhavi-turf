@@ -1,4 +1,3 @@
-import { del, put } from '@vercel/blob'
 import { cacheInvalidate, CacheKeys, TTL, withCache } from '@portfolio/cache'
 import { prisma } from '@portfolio/database'
 import {
@@ -584,6 +583,79 @@ export async function updatePortfolio(input: unknown, slug = DEFAULT_SLUG) {
   return getAdminPortfolio(slug)
 }
 
+/* ------------------------------------------------------------------ */
+/*  Uploaded assets — stored as bytes in Neon, served at /api/assets   */
+/* ------------------------------------------------------------------ */
+export type AssetMeta = { id: string; url: string; filename: string; mimeType: string; size: number }
+
+const MIME_EXT: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+  'image/svg+xml': 'svg',
+  'image/avif': 'avif',
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
+  'video/quicktime': 'mov',
+  'application/pdf': 'pdf',
+}
+
+/** Extension for an asset URL — from mime, else the original filename. */
+export function assetExt(mimeType: string, filename = ''): string {
+  if (MIME_EXT[mimeType]) return MIME_EXT[mimeType]
+  const m = filename.match(/\.([a-z0-9]+)$/i)
+  return m ? m[1].toLowerCase() : 'bin'
+}
+
+/** Build the public URL for an asset. Extension lets clients detect image vs video. */
+export function assetUrl(id: string, mimeType: string, filename = ''): string {
+  return `/api/assets/${id}.${assetExt(mimeType, filename)}`
+}
+
+export async function saveAsset(file: File): Promise<AssetMeta> {
+  const bytes = Buffer.from(await file.arrayBuffer())
+  const asset = await prisma.asset.create({
+    data: {
+      filename: file.name || 'upload',
+      mimeType: file.type || 'application/octet-stream',
+      size: bytes.length,
+      data: bytes,
+    },
+    select: { id: true, filename: true, mimeType: true, size: true },
+  })
+  return {
+    id: asset.id,
+    url: assetUrl(asset.id, asset.mimeType, asset.filename),
+    filename: asset.filename,
+    mimeType: asset.mimeType,
+    size: asset.size,
+  }
+}
+
+export async function getAsset(id: string) {
+  return prisma.asset.findUnique({
+    where: { id },
+    select: { data: true, mimeType: true, filename: true },
+  })
+}
+
+/** Pull the asset id out of a `/api/assets/<id>.<ext>` URL (null for static/external URLs). */
+export function assetIdFromUrl(url?: string | null): string | null {
+  if (!url) return null
+  const m = url.match(/\/api\/assets\/([^/?#.]+)/)
+  return m ? m[1] : null
+}
+
+export async function deleteAsset(id: string) {
+  try {
+    await prisma.asset.delete({ where: { id } })
+  } catch {
+    // already gone — ignore
+  }
+}
+
 export async function getResumeStatus(slug = DEFAULT_SLUG): Promise<ResumeStatusDTO> {
   const portfolio = await prisma.portfolio.findUniqueOrThrow({
     where: { slug },
@@ -594,38 +666,27 @@ export async function getResumeStatus(slug = DEFAULT_SLUG): Promise<ResumeStatus
 
 export async function uploadResume(file: File, slug = DEFAULT_SLUG) {
   if (file.type !== 'application/pdf') throw new Error('Only PDF files are allowed')
-  if (file.size > 10 * 1024 * 1024) throw new Error('File too large (max 10MB)')
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    throw new Error('BLOB_READ_WRITE_TOKEN is required for resume uploads')
-  }
+  if (file.size > 15 * 1024 * 1024) throw new Error('File too large (max 15MB)')
 
-  const blob = await put(`resumes/${Date.now()}-${file.name}`, file, {
-    access: 'public',
-    addRandomSuffix: true,
-  })
+  const previous = await getResumeStatus(slug)
+  const asset = await saveAsset(file)
 
-  await prisma.portfolio.update({
-    where: { slug },
-    data: { resumeUrl: blob.url },
-  })
+  await prisma.portfolio.update({ where: { slug }, data: { resumeUrl: asset.url } })
+
+  // Clean up a previously-uploaded asset (leaves static /public paths alone).
+  const prevId = assetIdFromUrl(previous.url)
+  if (prevId && prevId !== asset.id) await deleteAsset(prevId)
+
   await invalidatePortfolio(slug)
-  return { exists: true, url: blob.url }
+  return { exists: true, url: asset.url }
 }
 
 export async function deleteResume(slug = DEFAULT_SLUG) {
   const current = await getResumeStatus(slug)
-  if (current.url && process.env.BLOB_READ_WRITE_TOKEN) {
-    try {
-      await del(current.url)
-    } catch {
-      // The DB should still stop advertising a stale resume URL.
-    }
-  }
+  const id = assetIdFromUrl(current.url)
+  if (id) await deleteAsset(id)
 
-  await prisma.portfolio.update({
-    where: { slug },
-    data: { resumeUrl: null },
-  })
+  await prisma.portfolio.update({ where: { slug }, data: { resumeUrl: null } })
   await invalidatePortfolio(slug)
   return { exists: false, url: '' }
 }

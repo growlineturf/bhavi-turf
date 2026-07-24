@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import {
   PrismaClient,
   SkillCategory,
@@ -8,12 +10,55 @@ import {
 
 const prisma = new PrismaClient()
 
+// Public assets live in the portfolio app; the seed uploads them into Neon.
+const PUBLIC_DIR = path.resolve(__dirname, '..', '..', 'apps', 'portfolio', 'public')
+const MIME: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+  '.pdf': 'application/pdf',
+  '.mp4': 'video/mp4',
+}
+const URL_EXT: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+  'image/svg+xml': 'svg',
+  'application/pdf': 'pdf',
+  'video/mp4': 'mp4',
+}
+
+/** Read a /public file, store it as an Asset in Neon, return its /api/assets URL. */
+async function seedAsset(fileName: string): Promise<string> {
+  const data = readFileSync(path.join(PUBLIC_DIR, fileName))
+  const ext = path.extname(fileName).toLowerCase()
+  const mimeType = MIME[ext] || 'application/octet-stream'
+  const asset = await prisma.asset.create({
+    data: { filename: fileName, mimeType, size: data.length, data },
+    select: { id: true },
+  })
+  return `/api/assets/${asset.id}.${URL_EXT[mimeType] || ext.replace('.', '') || 'bin'}`
+}
+
 async function main() {
   console.log('🌱 Seeding database...')
 
   // Clean slate
   await prisma.siteSettings.deleteMany()
   await prisma.portfolio.deleteMany()
+  await prisma.asset.deleteMany()
+
+  // Upload the /public assets into Neon and reference them by URL
+  const [avatarUrl, resumeUrl, eleviqCover, letbuyyCover, quickplusCover] = await Promise.all([
+    seedAsset('portrait.jpg'),
+    seedAsset('resume.pdf'),
+    seedAsset('eleviq-cover.png'),
+    seedAsset('letbuyy-cover.png'),
+    seedAsset('quickplus-cover.png'),
+  ])
+  console.log('   Uploaded 5 assets to Neon')
 
   await prisma.portfolio.create({
     data: {
@@ -31,8 +76,8 @@ async function main() {
       location: 'Salem, Tamil Nadu',
       linkedinUrl: 'https://www.linkedin.com/in/abarna-sivakumar0115',
       githubUrl: 'https://github.com/Abarna-SA',
-      avatarUrl: '/portrait.jpg',
-      resumeUrl: '/resume.pdf',
+      avatarUrl,
+      resumeUrl,
       seoTitle: 'Abarna Sivakumar — AI & Full-Stack Developer',
       seoDescription:
         'Portfolio of Abarna Sivakumar, AI & Data Science engineer building AI-integrated full-stack applications across cybersecurity, fintech and e-commerce.',
@@ -71,7 +116,7 @@ async function main() {
             outcome:
               'Shipped a large real-time ecosystem — a ~23-screen web dashboard, a 27-page Flutter app, and a Firebase backend (Auth, Firestore, Storage, 7 Cloud Functions) — with core expense data syncing live across web and mobile.',
             description: `## Overview\nElevIQ is a GenAI personal-finance assistant delivered as both a Next.js web dashboard and a Flutter mobile app (Android/iOS) on one shared Firebase backend. It removes manual data entry by using Google Gemini to read receipts and analyse financial documents — with no bank-account linking.\n\n## Key Features\n- **AI receipt scanning** — photo to categorised expense with 7 category-specific extraction prompts and confidence scoring\n- **Streaming AI finance chat** over your data and uploaded statements (images, PDF, CSV)\n- **Full money toolkit** — dashboard, analytics, goals, net worth, bills, reminders, spending limits, bill-splitting\n- **15 working financial calculators** — EMI, SIP, FIRE, tax regime comparison, and more\n- **Custom auth** — sequential human-readable IDs, email + Google account linking, and session cookies\n\n## Architecture\nTwo native clients (React/TypeScript web, Dart/Flutter mobile) over a single Firebase project. Firestore stores expenses in a shared top-level collection keyed by userId for real-time sync; Cloud Functions handle budget-alert triggers and scheduled summaries; Gemini runs server-side on web and on-device in the Flutter scanner.`,
-            thumbnailUrl: '/eleviq-cover.png',
+            thumbnailUrl: eleviqCover,
             imageUrls: [],
             techStack: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS', 'Flutter', 'Dart', 'Firebase', 'Cloud Firestore', 'Google Gemini', 'Vercel'],
             tags: ['AI', 'Finance', 'Full-Stack', 'Cross-Platform'],
@@ -112,7 +157,7 @@ async function main() {
             outcome:
               'Shipped and published on the Google Play Store (com.letbuyy.letbuyy, v1.0.10), iterated across 10+ releases, with a full money layer live: Razorpay checkout with HMAC signature verification, a tiered commission engine, idempotent wallet crediting, scheduled auto-payouts, and itemized settlement invoices.',
             description: `## Overview\nLetBuyy is a live, published-on-Google-Play reels-commerce marketplace: buyers shop from short vertical videos, sellers run stores and upload reels, and an admin team governs the platform. A built-in Shopify-style store builder lets sellers launch their own branded storefront on a subdomain.\n\n## What makes it hard\n- **Reels / video commerce** — a vertical player with an LRU controller cache and eager preloading for instant playback, in-video product tagging, and cost-per-view ad billing.\n- **Payments & seller payouts** — Razorpay checkout with server-side order creation and HMAC-SHA256 verification; a tiered commission engine; idempotent, delivery-triggered wallet crediting; itemized settlement invoices and scheduled bank payouts.\n- **KYC** — automated PAN + Aadhaar OCR via Google Cloud Vision, fuzzy name matching, and a selfie face-match.\n\n## Architecture\nFour Flutter clients and three Next.js web apps share one Firebase project. Firestore (60+ collections) holds the denormalized data model; Cloud Functions (Node 20 / TypeScript) own all money movement, KYC, ads, and subscriptions.\n\n## Shipped\nLive on the Google Play Store — com.letbuyy.letbuyy.`,
-            thumbnailUrl: '/letbuyy-cover.png',
+            thumbnailUrl: letbuyyCover,
             imageUrls: [],
             techStack: ['Flutter', 'Dart', 'Firebase', 'TypeScript', 'Next.js', 'React', 'Cloud Firestore', 'Cloud Functions', 'Razorpay', 'Google Cloud Vision', 'Redis', 'Cloudflare Workers'],
             tags: ['E-Commerce', 'Marketplace', 'Reels/Video', 'Payments'],
@@ -155,7 +200,7 @@ async function main() {
             outcome:
               'Built a working guest-first safe-browser core with pre-navigation phishing interception and block/warn interstitials, on a hardened FastAPI backend (JWT RS256 with refresh-token rotation & reuse detection, rate limiting, Redis caching, Celery jobs, CI/CD), covered by ~30 backend and 40+ mobile tests.',
             description: `## Overview\nQuick+ PhishGuard is an Android app whose centerpiece is a built-in **safe browser**: it evaluates every URL *before the page loads* and selects a browsing mode (Normal / Protected / Warn / Block) proportional to the risk, tuned for India's scam landscape. It's backed by a clean-architecture FastAPI service and a community threat network.\n\n## How the safe browser protects you\n- **URL interception + real-time scan** — navigations are intercepted pre-commit in a flutter_inappwebview WebView; a full-screen interstitial blocks or warns with a plain-English reason.\n- **On-device (instant, private) → cloud (deep)** — a pure-Dart heuristic risk engine runs first with no network; a policy controller merges the two scores with fail-safe defaults (block ≥ 0.85, warn ≥ 0.55).\n\n## Detection pipeline\n- **Signals** — lexical/host heuristics (IP-host, punycode, mixed-script, Levenshtein typosquat vs 18 brands, suspicious TLDs, shorteners) plus a Hive allow/blocklist on-device; community patterns + heuristics on the backend.\n- **Model** — the cloud verdict uses a fine-tuned BERT phishing model via the Hugging Face Inference API, with a heuristic + community-pattern fallback.\n\n## Backend\nFastAPI (clean / DDD) · PostgreSQL via Prisma · Redis · Celery jobs · JWT RS256 with refresh-token rotation & reuse detection · per-endpoint rate limiting.`,
-            thumbnailUrl: '/quickplus-cover.png',
+            thumbnailUrl: quickplusCover,
             imageUrls: [],
             techStack: ['Flutter', 'Dart', 'Python', 'FastAPI', 'PostgreSQL', 'Redis', 'Docker', 'Riverpod', 'Hugging Face', 'Next.js'],
             tags: ['Cybersecurity', 'AI', 'Safe Browser', 'Full-Stack'],

@@ -372,3 +372,20 @@ enum ParseStatus {
   COMPLETED
   FAILED
 }
+
+// ─────────────────────────────────────────────
+// UPLOADED ASSETS (images / video / pdf stored in Neon)
+// Served by both apps at /api/assets/[id]; content fields
+// (avatarUrl, thumbnailUrl, imageUrls, resumeUrl, …) point here.
+// ─────────────────────────────────────────────
+
+model Asset {
+  id        String   @id @default(cuid())
+  filename  String
+  mimeType  String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@map("assets")
+}

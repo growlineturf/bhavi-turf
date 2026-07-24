@@ -1,6 +1,7 @@
 'use client'
 
 import { ChipsInput, ErrorState, Field, ListEditor, LoadingState, PageHead, SaveBar, Toggle, useSection } from '@/components/editor-kit'
+import { FileUpload, FileUploadMulti } from '@/components/file-upload'
 
 type TimelineItem = { phase: string; period: string; detail: string }
 type TeamMember = { name: string; role: string }
@@ -96,11 +97,11 @@ export default function ProjectsPage() {
                     </Field>
                   </div>
 
-                  <Field label="Thumbnail image URL" hint="Cover shown in the work grid.">
-                    <input className="input" value={project.thumbnailUrl} onChange={(e) => patch({ thumbnailUrl: e.target.value })} placeholder="https://… or /covers/name.png" />
+                  <Field label="Thumbnail image" hint="Cover shown in the work grid.">
+                    <FileUpload value={project.thumbnailUrl} onChange={(v) => patch({ thumbnailUrl: v })} accept="image/*" kind="image" />
                   </Field>
-                  <Field label="Gallery image URLs" hint="Carousel images on the detail page. Enter one URL at a time.">
-                    <ChipsInput values={project.imageUrls} onChange={(v) => patch({ imageUrls: v })} placeholder="https://…" />
+                  <Field label="Gallery media" hint="Images or video shown in the project's carousel.">
+                    <FileUploadMulti values={project.imageUrls} onChange={(v) => patch({ imageUrls: v })} />
                   </Field>
 
                   <div className="field-row">

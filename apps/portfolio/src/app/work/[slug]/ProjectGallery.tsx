@@ -10,6 +10,8 @@ type Props = {
   placeholders?: number
 }
 
+const isVideo = (url: string) => /\.(mp4|webm|mov)(\?|#|$)/i.test(url)
+
 export default function ProjectGallery({ title, images = [], placeholders = 3 }: Props) {
   const slides = images.length ? images : Array.from({ length: Math.max(placeholders, 1) })
   const [index, setIndex] = useState(0)
@@ -29,14 +31,25 @@ export default function ProjectGallery({ title, images = [], placeholders = 3 }:
     <div className="gallery">
       <div className="gallery-stage">
         {images.length ? (
-          <Image
-            key={index}
-            src={images[index]}
-            alt={`${title} screenshot ${index + 1}`}
-            fill
-            sizes="(max-width: 1000px) 100vw, 1000px"
-            priority={index === 0}
-          />
+          isVideo(images[index]) ? (
+            <video
+              key={index}
+              src={images[index]}
+              className="gallery-media"
+              controls
+              playsInline
+              preload="metadata"
+            />
+          ) : (
+            <Image
+              key={index}
+              src={images[index]}
+              alt={`${title} screenshot ${index + 1}`}
+              fill
+              sizes="(max-width: 1000px) 100vw, 1000px"
+              priority={index === 0}
+            />
+          )
         ) : (
           <div className="gallery-ph">
             <ImageIcon size={30} />
