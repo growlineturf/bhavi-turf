@@ -389,3 +389,78 @@ model Asset {
 
   @@map("assets")
 }
+
+// ─────────────────────────────────────────────
+// TURF ARENA — BOOKING SYSTEM
+// ─────────────────────────────────────────────
+
+model TurfConfig {
+  id              String   @id @default(cuid())
+  turfName        String   @default("TURF ARENA")
+  city            String   @default("Chennai, Tamil Nadu")
+  heroTitle       String   @default("Welcome to TURF ARENA")
+  heroTagline     String   @default("Premium Turf Booking Experience")
+  heroBannerUrl   String   @default("")
+  masterCode      String   @default("TURF2026")
+  gpayNumber      String   @default("")
+  upiId           String   @default("")
+  advanceAmount   Int      @default(500)
+  whatsappNumber  String   @default("")
+  // Time-block hourly rates (paise stored as Int — divide by 100 for ₹)
+  rateTwilight    Int      @default(800)
+  rateMorning     Int      @default(1000)
+  rateNoon        Int      @default(900)
+  rateEvening     Int      @default(1400)
+  updatedAt       DateTime @updatedAt
+
+  @@map("turf_config")
+}
+
+model TurfSlot {
+  id          String        @id @default(cuid())
+  date        String        // YYYY-MM-DD
+  timeFilter  String        // twilight | morning | noon | evening
+  hour        Int           // 0-23
+  minute      Int           // 0, 15, 30, 45
+  timeLabel   String        // e.g. "07:00 PM"
+  status      TurfSlotStatus @default(AVAILABLE)
+  price       Int           @default(0) // ₹ per 15-min slot
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  bookings    TurfBooking[]
+
+  @@unique([date, hour, minute])
+  @@map("turf_slots")
+}
+
+model TurfBooking {
+  id              String              @id @default(cuid())
+  slotId          String
+  slot            TurfSlot            @relation(fields: [slotId], references: [id])
+  date            String
+  slotTime        String
+  durationMinutes Int                 @default(60)
+  customerName    String
+  customerPhone   String
+  sport           String              @default("Cricket")
+  totalAmount     Int                 // ₹
+  advanceAmount   Int                 // ₹
+  paymentStatus   TurfPaymentStatus   @default(PENDING_VERIFICATION)
+  createdAt       DateTime            @default(now())
+
+  @@map("turf_bookings")
+}
+
+enum TurfSlotStatus {
+  AVAILABLE
+  BOOKED
+  BLOCKED
+  PAST
+}
+
+enum TurfPaymentStatus {
+  PENDING_VERIFICATION
+  CONFIRMED
+  CANCELLED
+}

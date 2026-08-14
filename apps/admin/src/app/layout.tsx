@@ -1,24 +1,21 @@
-import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
-import { Poppins } from 'next/font/google'
-import './admin.css'
-
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-poppins',
-  display: 'swap',
-})
+import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: 'Admin · Abarna Sivakumar',
-  description: 'Content management for the Abarna Sivakumar portfolio.',
-}
+  title: "Turf Arena — Admin",
+  description: "Private admin panel for Turf Arena. Not for public access.",
+  robots: "noindex, nofollow",
+};
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={poppins.variable}>
-      <body>{children}</body>
+    <html lang="en">
+      <head>
+        <meta name="theme-color" content="#0a0a0a" />
+      </head>
+      <body style={{ margin: 0, padding: 0, background: '#0a0a0a', color: '#f9fafb' }}>
+        {children}
+      </body>
     </html>
-  )
+  );
 }

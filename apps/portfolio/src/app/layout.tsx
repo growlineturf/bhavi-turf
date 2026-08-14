@@ -1,69 +1,31 @@
-import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
-import { Poppins } from 'next/font/google'
-import { getPublicPortfolio } from '@portfolio/cms'
-import { fallbackProfile } from '@/components/data/fallback'
-import './globals.css'
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import { Poppins } from "next/font/google";
+import { TurfProvider } from "@/lib/turfStore";
+import "./globals.css";
 
 const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-poppins',
-  display: 'swap',
-})
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-poppins",
+  display: "swap",
+});
 
-export async function generateMetadata(): Promise<Metadata> {
-  const baseUrl = process.env.NEXT_PUBLIC_PORTFOLIO_URL || 'http://localhost:3000'
-
-  let profile = {
-    name: fallbackProfile.name,
-    title: fallbackProfile.title,
-    tagline: fallbackProfile.tagline,
-    summary: fallbackProfile.summary,
-    avatarUrl: fallbackProfile.avatarUrl,
-  }
-
-  try {
-    const data = await getPublicPortfolio('abarna')
-    profile = {
-      name: data.profile.name,
-      title: data.profile.title,
-      tagline: data.profile.tagline,
-      summary: data.profile.summary,
-      avatarUrl: data.profile.avatarUrl,
-    }
-  } catch {
-    // fall back to static profile above
-  }
-
-  const title = `${profile.name} — ${profile.title}`
-  const description = profile.tagline || profile.summary
-
-  return {
-    title,
-    description,
-    metadataBase: new URL(baseUrl),
-    openGraph: {
-      title,
-      description,
-      type: 'website',
-      images: profile.avatarUrl ? [{ url: profile.avatarUrl }] : undefined,
-    },
-    twitter: { card: 'summary_large_image' },
-    keywords: [profile.name, profile.title, 'AI Developer', 'Full-Stack Developer', 'React', 'Python', 'AWS', 'Hire'],
-  }
-}
+export const metadata: Metadata = {
+  title: "TURF ARENA — Premium Sports Turf Booking",
+  description: "Book FIFA-standard artificial turf for Box Cricket & 5-a-Side Football in Tamil Nadu. Instant online slot reservation & GPay advance confirmation.",
+  keywords: ["Turf Booking", "Box Cricket", "Football Turf", "Tamil Nadu Turf", "GPay Booking"],
+};
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" data-scroll-behavior="smooth" className={poppins.variable}>
+    <html lang="en" className={`${poppins.variable} dark`}>
       <head>
-        <meta name="theme-color" content="#eef0f3" />
+        <meta name="theme-color" content="#0a0a0a" />
       </head>
-      <body>
-        <div className="cloud-bg" aria-hidden />
-        <div className="site-shell">{children}</div>
+      <body className="bg-zinc-950 text-white min-h-screen antialiased">
+        <TurfProvider>{children}</TurfProvider>
       </body>
     </html>
-  )
+  );
 }

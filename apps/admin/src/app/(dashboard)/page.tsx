@@ -1,87 +1,83 @@
-import Link from 'next/link'
-import { ArrowUpRight, Award, Boxes, Briefcase, FileText, FolderGit2, GraduationCap, Mail, User, Wrench } from 'lucide-react'
-import { getAdminPortfolio, getContactSubmissions } from '@portfolio/cms'
+'use client'
 
-export const dynamic = 'force-dynamic'
+import { useAdmin } from '@/lib/adminStore'
+import { Trophy, CalendarCheck, DollarSign, CheckCircle, Clock, XCircle } from 'lucide-react'
 
-export default async function DashboardHome() {
-  let data: Awaited<ReturnType<typeof getAdminPortfolio>> | null = null
-  let unread = 0
-  let dbError = false
+export default function DashboardHome() {
+  const { config, bookings } = useAdmin()
 
-  try {
-    data = await getAdminPortfolio()
-    const messages = await getContactSubmissions()
-    unread = messages.filter((m) => !m.isRead).length
-  } catch {
-    dbError = true
-  }
-
-  if (dbError || !data) {
-    return (
-      <div>
-        <div className="page-head">
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-sub">Welcome back.</p>
-        </div>
-        <div className="empty" style={{ color: 'var(--danger)', borderColor: '#e2b4b0' }}>
-          Couldn&apos;t reach the database. Make sure <code>DATABASE_URL</code> is set and the schema is migrated &amp; seeded.
-        </div>
-      </div>
-    )
-  }
+  const total = bookings.length
+  const confirmed = bookings.filter((b) => b.paymentStatus === 'CONFIRMED').length
+  const pending = bookings.filter((b) => b.paymentStatus === 'PENDING_VERIFICATION').length
+  const revenue = bookings
+    .filter((b) => b.paymentStatus === 'CONFIRMED')
+    .reduce((s, b) => s + b.totalAmount, 0)
+  const advances = bookings
+    .filter((b) => b.paymentStatus !== 'CANCELLED')
+    .reduce((s, b) => s + b.advanceAmount, 0)
 
   const stats = [
-    { label: 'Projects', value: data.projects.length, href: '/projects' },
-    { label: 'Skills', value: data.skills.length, href: '/skills' },
-    { label: 'Experience', value: data.experience.length, href: '/experience' },
-    { label: 'Certifications', value: data.certifications.length, href: '/certifications' },
-    { label: 'Education', value: data.education.length, href: '/education' },
-    { label: 'Activities', value: data.activities.length, href: '/activities' },
-  ]
-
-  const quick = [
-    { label: 'Edit profile', href: '/profile', icon: User },
-    { label: 'Manage projects', href: '/projects', icon: FolderGit2 },
-    { label: 'Update skills', href: '/skills', icon: Wrench },
-    { label: 'Experience', href: '/experience', icon: Briefcase },
-    { label: 'Education', href: '/education', icon: GraduationCap },
-    { label: 'Certifications', href: '/certifications', icon: Award },
-    { label: 'Tech stack', href: '/tech-stack', icon: Boxes },
-    { label: 'Résumé', href: '/resume', icon: FileText },
-    { label: `Messages${unread ? ` · ${unread} new` : ''}`, href: '/messages', icon: Mail },
+    { label: 'Total Bookings', value: total, color: '#3b82f6' },
+    { label: 'Confirmed', value: confirmed, color: '#22c55e' },
+    { label: 'Pending Verification', value: pending, color: '#f59e0b' },
+    { label: 'Total Revenue (₹)', value: `₹${revenue.toLocaleString()}`, color: '#a78bfa' },
+    { label: 'Advance Collected (₹)', value: `₹${advances.toLocaleString()}`, color: '#34d399' },
+    { label: 'Evening Rate (₹/hr)', value: `₹${config.hourlyRates.evening}`, color: '#60a5fa' },
   ]
 
   return (
     <div className="stack" style={{ gap: 28 }}>
+      {/* Header */}
       <div className="page-head" style={{ margin: 0 }}>
-        <h1 className="page-title">Welcome back, {data.profile.name.split(' ')[0] || 'there'}</h1>
-        <p className="page-sub">Everything here publishes straight to your live portfolio.</p>
+        <h1 className="page-title">Welcome back 👋</h1>
+        <p className="page-sub">{config.turfName} — {config.city}</p>
       </div>
 
+      {/* Stats Grid */}
       <div className="stat-grid">
         {stats.map((s) => (
-          <Link key={s.label} href={s.href} className="stat-card" style={{ display: 'block' }}>
-            <div className="stat-value">{s.value}</div>
+          <div key={s.label} className="stat-card">
+            <div className="stat-value" style={{ color: s.color }}>{s.value}</div>
             <div className="stat-label">{s.label}</div>
-          </Link>
+          </div>
         ))}
       </div>
 
+      {/* Recent Bookings Preview */}
       <div>
         <div className="card-head" style={{ marginBottom: 14 }}>
-          <h2 className="card-title">Quick actions</h2>
+          <h2 className="card-title">Recent Bookings</h2>
         </div>
-        <div className="quick-grid">
-          {quick.map((q) => (
-            <Link key={q.href} href={q.href} className="quick-card">
-              <span className="quick-ico">
-                <q.icon size={18} />
-              </span>
-              <span style={{ fontWeight: 600, fontSize: '0.92rem' }}>{q.label}</span>
-              <ArrowUpRight size={16} className="muted" style={{ marginLeft: 'auto' }} />
-            </Link>
-          ))}
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--line)' }}>
+                {['ID', 'Customer', 'Phone', 'Slot', 'Amount', 'Status'].map((h) => (
+                  <th key={h} style={{ padding: '10px 16px', textAlign: 'left', color: 'var(--muted)', fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {bookings.slice(0, 5).map((b) => (
+                <tr key={b.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                  <td style={{ padding: '10px 16px', fontFamily: 'monospace', color: 'var(--accent)', fontSize: '0.8rem' }}>{b.id}</td>
+                  <td style={{ padding: '10px 16px', fontWeight: 600 }}>{b.customerName}</td>
+                  <td style={{ padding: '10px 16px', color: 'var(--muted)' }}>{b.customerPhone}</td>
+                  <td style={{ padding: '10px 16px', color: 'var(--muted)' }}>{b.date} · {b.slotTime}</td>
+                  <td style={{ padding: '10px 16px', fontWeight: 700 }}>₹{b.totalAmount}</td>
+                  <td style={{ padding: '10px 16px' }}>
+                    <span className="badge" style={{
+                      background: b.paymentStatus === 'CONFIRMED' ? '#dcfce7' : b.paymentStatus === 'CANCELLED' ? '#fee2e2' : '#fef9c3',
+                      color: b.paymentStatus === 'CONFIRMED' ? '#15803d' : b.paymentStatus === 'CANCELLED' ? '#dc2626' : '#b45309',
+                      border: 'none',
+                    }}>
+                      {b.paymentStatus === 'CONFIRMED' ? '✓ Confirmed' : b.paymentStatus === 'CANCELLED' ? '✗ Cancelled' : '⏳ Pending'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

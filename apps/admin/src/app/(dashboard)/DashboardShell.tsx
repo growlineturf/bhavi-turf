@@ -5,44 +5,29 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import SignOutButton from '@/components/sign-out-button'
 import {
-  Activity,
-  Award,
-  Boxes,
-  Briefcase,
-  ExternalLink,
-  FileText,
-  FolderGit2,
-  GraduationCap,
   LayoutDashboard,
-  Mail,
+  CalendarCheck,
+  DollarSign,
+  Sliders,
+
+  CreditCard,
+  ExternalLink,
   Menu,
-  Settings,
-  User,
-  Wrench,
   X,
+  Trophy,
 } from 'lucide-react'
 
-const CONTENT = [
-  { label: 'Profile', href: '/profile', icon: User },
-  { label: 'Projects', href: '/projects', icon: FolderGit2 },
-  { label: 'Skills', href: '/skills', icon: Wrench },
-  { label: 'Experience', href: '/experience', icon: Briefcase },
-  { label: 'Education', href: '/education', icon: GraduationCap },
-  { label: 'Certifications', href: '/certifications', icon: Award },
-  { label: 'Tech Stack', href: '/tech-stack', icon: Boxes },
-  { label: 'Activities', href: '/activities', icon: Activity },
+const NAV_ITEMS = [
+  { label: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { label: 'Bookings', href: '/bookings', icon: CalendarCheck },
+  { label: 'Slot Pricing', href: '/pricing', icon: DollarSign },
+  { label: 'Branding & Hero', href: '/branding', icon: Sliders },
+  { label: 'GPay & Payment', href: '/payments', icon: CreditCard },
 ]
 
-const SITE = [
-  { label: 'Résumé', href: '/resume', icon: FileText },
-  { label: 'Messages', href: '/messages', icon: Mail },
-  { label: 'Settings', href: '/settings', icon: Settings },
-]
-
-const TITLES: Record<string, string> = {
-  '/': 'Dashboard',
-  ...Object.fromEntries([...CONTENT, ...SITE].map((n) => [n.href, n.label])),
-}
+const TITLES: Record<string, string> = Object.fromEntries(
+  NAV_ITEMS.map((n) => [n.href, n.label])
+)
 
 export default function DashboardShell({
   children,
@@ -56,9 +41,9 @@ export default function DashboardShell({
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const portfolioUrl = process.env.NEXT_PUBLIC_PORTFOLIO_URL || 'http://localhost:3000'
-  const title = TITLES[pathname] ?? 'Admin'
+  const title = TITLES[pathname] ?? 'Dashboard'
 
-  const NavLink = ({ label, href, icon: Icon }: { label: string; href: string; icon: typeof User }) => (
+  const NavLink = ({ label, href, icon: Icon }: { label: string; href: string; icon: typeof LayoutDashboard }) => (
     <Link
       href={href}
       className={`admin-nav-link${pathname === href ? ' active' : ''}`}
@@ -72,30 +57,25 @@ export default function DashboardShell({
   return (
     <div className="admin-shell">
       <aside className={`admin-sidebar${open ? ' open' : ''}`}>
+        {/* Brand */}
         <div className="admin-brand">
-          <span className="admin-brand-mark">AS</span>
+          <span className="admin-brand-mark" style={{ background: '#2563eb' }}>
+            <Trophy size={16} />
+          </span>
           <div>
-            <div className="admin-brand-name">Portfolio</div>
+            <div className="admin-brand-name">Turf Arena</div>
             <div className="admin-brand-sub">Admin Panel</div>
           </div>
         </div>
 
+        {/* Nav */}
         <nav className="admin-nav">
-          <Link href="/" className={`admin-nav-link${pathname === '/' ? ' active' : ''}`} onClick={() => setOpen(false)}>
-            <LayoutDashboard size={17} /> Dashboard
-          </Link>
-
-          <div className="admin-nav-label">Content</div>
-          {CONTENT.map((n) => (
-            <NavLink key={n.href} {...n} />
-          ))}
-
-          <div className="admin-nav-label">Site</div>
-          {SITE.map((n) => (
+          {NAV_ITEMS.map((n) => (
             <NavLink key={n.href} {...n} />
           ))}
         </nav>
 
+        {/* Footer */}
         <div className="admin-sidebar-foot">
           <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="btn btn-sm">
             <ExternalLink size={15} /> View Live Site
@@ -124,7 +104,7 @@ export default function DashboardShell({
               {open ? <X size={18} /> : <Menu size={18} />}
             </button>
             <div className="admin-crumb">
-              <span>Admin</span>
+              <span>Turf Arena</span>
               <span style={{ color: 'var(--muted-2)' }}>/</span>
               <b>{title}</b>
             </div>
@@ -133,7 +113,9 @@ export default function DashboardShell({
             <span className="admin-live">
               <span className="dot" /> Live
             </span>
-            <span className="admin-user-email" style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>{userEmail}</span>
+            <span className="admin-user-email" style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
+              {userEmail}
+            </span>
           </div>
         </header>
 
