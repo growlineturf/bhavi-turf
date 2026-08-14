@@ -258,6 +258,13 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
       toggleSlotStatus(selectedSlot.id, "BOOKED");
     }
 
+    // Save to Neon DB so admin panel syncs
+    fetch("/api/bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newBooking),
+    }).catch(console.error);
+
     return newBooking;
   };
 

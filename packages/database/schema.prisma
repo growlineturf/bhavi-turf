@@ -342,7 +342,7 @@ model SiteSettings {
 model AdminUser {
   id           String   @id @default(cuid())
   email        String   @unique
-  passwordHash String
+  passwordHash String   // bcrypt hashed
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -390,77 +390,61 @@ model Asset {
   @@map("assets")
 }
 
+
 // ─────────────────────────────────────────────
 // TURF ARENA — BOOKING SYSTEM
 // ─────────────────────────────────────────────
 
-model TurfConfig {
-  id              String   @id @default(cuid())
-  turfName        String   @default("TURF ARENA")
-  city            String   @default("Chennai, Tamil Nadu")
-  heroTitle       String   @default("Welcome to TURF ARENA")
-  heroTagline     String   @default("Premium Turf Booking Experience")
-  heroBannerUrl   String   @default("")
-  masterCode      String   @default("TURF2026")
-  gpayNumber      String   @default("")
-  upiId           String   @default("")
-  advanceAmount   Int      @default(500)
-  whatsappNumber  String   @default("")
-  // Time-block hourly rates (paise stored as Int — divide by 100 for ₹)
-  rateTwilight    Int      @default(800)
-  rateMorning     Int      @default(1000)
-  rateNoon        Int      @default(900)
-  rateEvening     Int      @default(1400)
-  updatedAt       DateTime @updatedAt
+model Slot {
+  id               String    @id @default(uuid())
+  date             DateTime  @db.Date
+  startTime        String    // "17:45"
+  endTime          String    // "18:00"
+  sport            String    @default("Cricket")
+  price            Decimal   @db.Decimal(10, 2)
+  status           String    @default("available") // available | pending | booked | blocked
+  pendingExpiresAt DateTime?
+  bookings         Booking[]
+  createdAt        DateTime  @default(now())
 
-  @@map("turf_config")
+  @@unique([date, startTime, sport])
+  @@map("slots")
 }
 
-model TurfSlot {
-  id          String        @id @default(cuid())
-  date        String        // YYYY-MM-DD
-  timeFilter  String        // twilight | morning | noon | evening
-  hour        Int           // 0-23
-  minute      Int           // 0, 15, 30, 45
-  timeLabel   String        // e.g. "07:00 PM"
-  status      TurfSlotStatus @default(AVAILABLE)
-  price       Int           @default(0) // ₹ per 15-min slot
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+model Booking {
+  id               String    @id @default(uuid())
+  bookingCode      String    @unique // BK-XXXX
+  slotId           String
+  slot             Slot      @relation(fields: [slotId], references: [id])
+  customerName     String
+  customerPhone    String
+  totalAmount      Decimal   @db.Decimal(10, 2)
+  advanceAmount    Decimal   @db.Decimal(10, 2)
+  gpayNumber       String
+  status           String    @default("pending_payment") // pending_payment | confirmed | cancelled | expired
+  createdAt        DateTime  @default(now())
+  confirmedAt      DateTime?
+  confirmedByAdmin Boolean   @default(false)
 
-  bookings    TurfBooking[]
-
-  @@unique([date, hour, minute])
-  @@map("turf_slots")
+  @@map("bookings")
 }
 
-model TurfBooking {
-  id              String              @id @default(cuid())
-  slotId          String
-  slot            TurfSlot            @relation(fields: [slotId], references: [id])
-  date            String
-  slotTime        String
-  durationMinutes Int                 @default(60)
-  customerName    String
-  customerPhone   String
-  sport           String              @default("Cricket")
-  totalAmount     Int                 // ₹
-  advanceAmount   Int                 // ₹
-  paymentStatus   TurfPaymentStatus   @default(PENDING_VERIFICATION)
-  createdAt       DateTime            @default(now())
 
-  @@map("turf_bookings")
+
+model Settings {
+  id             String  @id @default("singleton")
+  turfName       String  @default("Turf Arena")
+  city           String  @default("Chennai, Tamil Nadu")
+  whatsappNumber String  @default("")
+  gpayNumber     String  @default("")
+  advanceAmount  Decimal @default(500) @db.Decimal(10, 2)
+  heroTitle      String  @default("Book Your Slot")
+  heroTagline    String  @default("Premium Turf Experience")
+  heroBannerUrl  String  @default("")
+  updatedAt      DateTime @updatedAt
+
+  @@map("settings")
 }
 
-enum TurfSlotStatus {
-  AVAILABLE
-  BOOKED
-  BLOCKED
-  PAST
-}
 
-enum TurfPaymentStatus {
-  PENDING_VERIFICATION
-  CONFIRMED
-  CANCELLED
-}
+

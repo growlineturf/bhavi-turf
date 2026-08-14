@@ -59,7 +59,7 @@ export default function BookingModal() {
     `Here is my payment screenshot for instant verification!`
   );
 
-  const whatsappUrl = `https://wa.me/${config.whatsappNumber}?text=${whatsappMessage}`;
+  const whatsappUrl = `https://wa.me/91${config.whatsappNumber.replace(/\D/g, '').slice(-10)}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200">
