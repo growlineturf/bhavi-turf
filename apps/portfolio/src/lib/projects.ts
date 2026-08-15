@@ -1,4 +1,3 @@
-import { getPublicPortfolio } from '@portfolio/cms'
 import type { Project } from '@/components/portfolio-types'
 import {
   fallbackProfile,
@@ -9,17 +8,6 @@ import {
 } from '@/components/data/fallback'
 
 export async function loadProjects(): Promise<{ projects: Project[]; github: string }> {
-  try {
-    const data = await getPublicPortfolio('abarna')
-    if (data.projects?.length) {
-      return {
-        projects: data.projects as unknown as Project[],
-        github: data.profile.github || fallbackProfile.github,
-      }
-    }
-  } catch {
-    // fall through to static fallback
-  }
   return { projects: fallbackProjects, github: fallbackProfile.github }
 }
 
