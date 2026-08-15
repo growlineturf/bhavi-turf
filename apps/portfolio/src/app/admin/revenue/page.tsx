@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { BarChart3 } from 'lucide-react'
 
 interface Booking {
-  id: string; bookingCode: string; customerName: string; totalAmount: number; advanceAmount: number
+  id: string; customerName: string; totalAmount: number; advanceAmount: number
   confirmedAt: string; slot: { startTime: string; sport: string; date: string }
 }
 
@@ -66,7 +66,7 @@ export default function RevenuePage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-zinc-800">
-                {['Code','Customer','Date','Sport','Advance','Total'].map(h => (
+                {['Customer','Date','Sport','Advance','Total'].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -74,7 +74,6 @@ export default function RevenuePage() {
             <tbody>
               {bookings.map(b => (
                 <tr key={b.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
-                  <td className="px-4 py-3 font-mono text-blue-400">{b.bookingCode}</td>
                   <td className="px-4 py-3 font-semibold text-white">{b.customerName}</td>
                   <td className="px-4 py-3 text-zinc-400">{new Date(b.slot?.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</td>
                   <td className="px-4 py-3 text-zinc-400">{b.slot?.sport}</td>
@@ -83,7 +82,7 @@ export default function RevenuePage() {
                 </tr>
               ))}
               {bookings.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-zinc-600">No confirmed bookings in this range</td></tr>
+                <tr><td colSpan={5} className="px-4 py-10 text-center text-zinc-600">No confirmed bookings in this range</td></tr>
               )}
             </tbody>
           </table>

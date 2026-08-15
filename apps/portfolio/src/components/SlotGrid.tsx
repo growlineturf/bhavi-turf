@@ -150,7 +150,7 @@ function BookingSheet({
   config: BookingConfig;
   date: string;
   sport: Sport;
-  onConfirm: (name: string, phone: string) => Promise<string>;
+  onConfirm: (name: string, phone: string) => Promise<void>;
   onClose: () => void;
 }) {
   const [step, setStep]         = useState<"info" | "form" | "done">("info");
@@ -158,14 +158,11 @@ function BookingSheet({
   const [phone, setPhone]       = useState("");
   const [loading, setLoad]      = useState(false);
   const [error, setError]       = useState("");
-  const [bookingCode, setCode]  = useState("");
   const [copiedGpay, setCopiedGpay]   = useState(false);
-  const [copiedCode, setCopiedCode]   = useState(false);
 
-  const copyText = (text: string, which: "gpay" | "code") => {
+  const copyText = (text: string) => {
     navigator.clipboard.writeText(text).catch(() => {});
-    if (which === "gpay") { setCopiedGpay(true); setTimeout(() => setCopiedGpay(false), 2000); }
-    else                  { setCopiedCode(true); setTimeout(() => setCopiedCode(false), 2000); }
+    setCopiedGpay(true); setTimeout(() => setCopiedGpay(false), 2000);
   };
 
   // Snapshot slot data on mount — survives when slots get marked booked after confirm
@@ -180,8 +177,7 @@ function BookingSheet({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setLoad(true); setError("");
     try {
-      const code = await onConfirm(name, phone);
-      setCode(code);
+      await onConfirm(name, phone);
       setStep("done");
     }
     catch (err: unknown) { setError(err instanceof Error ? err.message : "Booking failed. Try again."); }
@@ -192,7 +188,6 @@ function BookingSheet({
   const waText = encodeURIComponent(
     `Hi ${config.turfName}! 🎉\n\n` +
     `I've booked a slot and paid the advance.\n\n` +
-    `📋 *Booking ID:* ${bookingCode}\n` +
     `📅 *Date:* ${fmtDate(date)}\n` +
     `⏰ *Time:* ${fmtFull(start)} – ${fmtFull(end)}\n` +
     `${sport === "Cricket" ? "🏏" : "⚽"} *Sport:* ${sport}\n` +
@@ -269,19 +264,7 @@ function BookingSheet({
                 <p className="text-xs text-zinc-500 mt-1">Slot reserved · Pay advance below to lock it in</p>
               </div>
 
-              {/* Booking ID — tap to copy */}
-              <button
-                onClick={() => copyText(bookingCode, "code")}
-                className="w-full flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 active:scale-95 transition"
-              >
-                <div className="text-left">
-                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Booking ID</p>
-                  <p className="font-mono font-black text-blue-400 text-lg tracking-wider">{bookingCode}</p>
-                </div>
-                <span className={`text-xs font-bold px-3 py-1.5 rounded-full transition ${copiedCode ? "bg-emerald-600 text-white" : "bg-zinc-800 text-zinc-400"}`}>
-                  {copiedCode ? "✓ Copied" : "Copy"}
-                </span>
-              </button>
+
 
               {/* Booking details */}
               <div className="bg-zinc-900 border border-zinc-800 rounded-2xl divide-y divide-zinc-800/70">
@@ -318,7 +301,7 @@ function BookingSheet({
 
                 {/* GPay number — large copy button */}
                 <button
-                  onClick={() => copyText(config.gpayNumber, "gpay")}
+                  onClick={() => copyText(config.gpayNumber)}
                   className={`w-full flex items-center justify-between rounded-xl px-4 py-3 border transition active:scale-95 ${
                     copiedGpay
                       ? "bg-emerald-600/20 border-emerald-600/50"
@@ -481,11 +464,11 @@ export default function SlotGrid({ date, period, config }: SlotGridProps) {
       });
       bookData = await bookRes.json().catch(() => null);
 
-      if (bookRes.ok && bookData?.bookingCode) {
+      if (bookRes.ok && bookData?.success) {
         // Success path
         const bookedIds = new Set(selectedSlots.map(s => s.id));
         setSlots(prev => prev.map(s => bookedIds.has(s.id) ? { ...s, status: "booked" as SlotStatus } : s));
-        return bookData.bookingCode;
+        return;
       }
 
       if (bookData?.error === "SLOT_UNAVAILABLE") {
@@ -496,15 +479,15 @@ export default function SlotGrid({ date, period, config }: SlotGridProps) {
       if (err instanceof Error && err.message.includes("no longer available")) throw err;
     }
 
-    // Recovery: booking may have timed out but still saved — look up by phone
+    // Recovery: booking may have succeeded but response timed out — look up by phone
     try {
       const recovery = await fetch(`/api/bookings?phone=${encodeURIComponent(phone)}`);
       if (recovery.ok) {
         const found = await recovery.json();
-        if (found?.bookingCode) {
+        if (found?.status) {
           const bookedIds = new Set(selectedSlots.map(s => s.id));
           setSlots(prev => prev.map(s => bookedIds.has(s.id) ? { ...s, status: "booked" as SlotStatus } : s));
-          return found.bookingCode;
+          return;
         }
       }
     } catch { /* ignore recovery failure */ }

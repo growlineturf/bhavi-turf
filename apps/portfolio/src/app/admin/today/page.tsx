@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Calendar, RefreshCw, Phone, XCircle, CheckCircle, AlertTriangle } from 'lucide-react'
 
 interface Booking {
-  id: string; bookingCode: string; customerName: string; customerPhone: string
+  id: string; customerName: string; customerPhone: string
   totalAmount: number; advanceAmount: number; status: string
   slot: { startTime: string; endTime: string; sport: string; date: string }
 }
@@ -78,7 +78,6 @@ export default function TodayPage() {
               <div key={b.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 space-y-3">
                 {/* Header row */}
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-blue-400 font-bold text-sm">{b.bookingCode}</span>
                   <span className="text-xs text-emerald-400 bg-emerald-900/30 px-2 py-0.5 rounded-full font-semibold">
                     ✓ Confirmed
                   </span>

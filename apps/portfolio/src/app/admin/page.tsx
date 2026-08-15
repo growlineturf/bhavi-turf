@@ -5,7 +5,7 @@ import { CheckCircle, XCircle, RefreshCw, Phone, Clock, MessageSquare } from 'lu
 
 interface Slot { id: string; date: string; startTime: string; endTime: string; sport: string; pendingExpiresAt?: string }
 interface Booking {
-  id: string; bookingCode: string; customerName: string; customerPhone: string
+  id: string; customerName: string; customerPhone: string
   totalAmount: number; advanceAmount: number; gpayNumber: string
   status: string; createdAt: string; slot: Slot
   pendingExpiresAt?: string
@@ -76,7 +76,6 @@ export default function AdminPendingPage() {
           <div key={b.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
             <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
               <div className="flex items-center gap-3">
-                <span className="font-mono text-blue-400 font-bold text-sm">{b.bookingCode}</span>
                 <Countdown expiresAt={b.slot?.pendingExpiresAt} />
               </div>
               <span className="text-xs text-zinc-500">{new Date(b.createdAt).toLocaleString('en-IN')}</span>

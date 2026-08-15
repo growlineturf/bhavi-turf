@@ -3,10 +3,6 @@ import { neon } from '@neondatabase/serverless'
 
 function db() { return neon(process.env.DATABASE_URL!) }
 
-function genBookingCode() {
-  return `BK-${Math.floor(1000 + Math.random() * 9000)}`
-}
-
 // GET bookings (admin)
 export async function GET(req: NextRequest) {
   const sql = db()
@@ -17,7 +13,7 @@ export async function GET(req: NextRequest) {
     // Recovery lookup: check if booking already exists for this phone (last 5 min)
     if (phone) {
       const rows = await sql`
-        SELECT b."bookingCode", b.status, b."createdAt"
+        SELECT b.status, b."createdAt"
         FROM bookings b
         WHERE b."customerPhone" = ${phone}
           AND b."createdAt" > now() - interval '5 minutes'
@@ -71,11 +67,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'SLOT_UNAVAILABLE' }, { status: 409 })
     }
 
-    const code = genBookingCode()
+    const groupId = crypto.randomUUID()
 
     // 2. Batch INSERT all bookings in ONE query + UPDATE slots in ONE query (parallel)
     const bookingValues = ids.map(sid => ({
-      sid, code,
+      sid, groupId,
       customerName: customerName ?? '',
       customerPhone: customerPhone ?? '',
       totalAmount: totalAmount ?? 0,
@@ -89,7 +85,7 @@ export async function POST(req: NextRequest) {
           "totalAmount", "advanceAmount", "gpayNumber", status, "createdAt")
         SELECT
           gen_random_uuid(),
-          (v->>'code')::text,
+          (v->>'groupId')::text,
           (v->>'sid')::uuid,
           (v->>'customerName')::text,
           (v->>'customerPhone')::text,
@@ -107,7 +103,7 @@ export async function POST(req: NextRequest) {
       `,
     ])
 
-    return NextResponse.json({ bookingCode: code, slotCount: ids.length })
+    return NextResponse.json({ success: true, slotCount: ids.length })
   } catch (e) {
     console.error(e)
     return NextResponse.json({ error: 'SERVER_ERROR' }, { status: 500 })
