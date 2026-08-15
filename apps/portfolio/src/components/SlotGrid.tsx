@@ -450,7 +450,7 @@ export default function SlotGrid({ date, period, config }: SlotGridProps) {
     if (!selectedSlots.length) throw new Error("No slots selected.");
 
     // Skip the hold step — go directly to booking (fewer DB round trips = faster)
-    let bookData: { bookingCode?: string; error?: string } | null = null;
+    let bookData: { success?: boolean; error?: string } | null = null;
 
     try {
       const bookRes = await fetch("/api/bookings", {
