@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Trophy, Lock, Eye, EyeOff, Loader2 } from 'lucide-react'
@@ -12,6 +12,11 @@ export default function AdminLoginPage() {
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Warm up Neon DB connection as soon as login page loads
+  useEffect(() => {
+    fetch('/api/auth/session').catch(() => {})
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

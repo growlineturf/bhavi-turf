@@ -1,7 +1,7 @@
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
-import { prisma } from '@/lib/prisma'
+import { neon } from '@neondatabase/serverless'
 
 const handler = NextAuth({
   providers: [
@@ -13,17 +13,23 @@ const handler = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
-        const user = await prisma.adminUser.findUnique({
-          where: { email: credentials.email },
-        })
-        if (!user) return null
-        const valid = await bcrypt.compare(credentials.password, user.passwordHash)
+
+        const sql = neon(process.env.DATABASE_URL!)
+
+        const rows = await sql`
+          SELECT id, email, "passwordHash" FROM admin_users WHERE email = ${credentials.email} LIMIT 1
+        `
+        if (rows.length === 0) return null
+
+        const user = rows[0]
+        const valid = await bcrypt.compare(credentials.password, user.passwordHash as string)
         if (!valid) return null
-        return { id: user.id, email: user.email, name: 'Admin' }
+
+        return { id: user.id as string, email: user.email as string, name: 'Admin' }
       },
     }),
   ],
-  session: { strategy: 'jwt' },
+  session: { strategy: 'jwt', maxAge: 24 * 60 * 60 }, // 24 hour session
   pages: { signIn: '/admin/login' },
   callbacks: {
     async jwt({ token, user }) {

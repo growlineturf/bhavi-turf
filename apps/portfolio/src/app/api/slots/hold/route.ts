@@ -1,28 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { neon } from '@neondatabase/serverless'
 
 export async function POST(req: NextRequest) {
-  const { slotId } = await req.json()
-  if (!slotId) return NextResponse.json({ error: 'slotId required' }, { status: 400 })
+  const sql = neon(process.env.DATABASE_URL!)
+  const body = await req.json()
 
-  const pendingExpiresAt = new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
+  // Accept both single slotId (legacy) and slotIds array
+  const slotIds: string[] = body.slotIds ?? (body.slotId ? [body.slotId] : [])
+  if (!slotIds.length) {
+    return NextResponse.json({ error: 'slotIds required' }, { status: 400 })
+  }
+
+  const pendingExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
 
   try {
-    const slot = await prisma.$transaction(async (tx) => {
-      const current = await tx.slot.findUnique({ where: { id: slotId } })
-      if (!current || current.status !== 'available') {
-        throw new Error('SLOT_TAKEN')
-      }
-      return tx.slot.update({
-        where: { id: slotId },
-        data: { status: 'pending', pendingExpiresAt },
-      })
-    })
-    return NextResponse.json({ slot, pendingExpiresAt })
-  } catch (e: unknown) {
-    if (e instanceof Error && e.message === 'SLOT_TAKEN') {
-      return NextResponse.json({ error: 'SLOT_TAKEN' }, { status: 409 })
+    // Check all slots are currently available
+    const current = await sql`
+      SELECT id, status FROM slots WHERE id = ANY(${slotIds})
+    `
+    const unavailable = current.filter((r: any) => r.status !== 'available')
+    if (unavailable.length > 0) {
+      return NextResponse.json({ error: 'SLOT_UNAVAILABLE' }, { status: 409 })
     }
+    if (current.length !== slotIds.length) {
+      return NextResponse.json({ error: 'SLOT_NOT_FOUND' }, { status: 404 })
+    }
+
+    // Atomically hold all slots
+    const updated = await sql`
+      UPDATE slots
+      SET status = 'pending', "pendingExpiresAt" = ${pendingExpiresAt}
+      WHERE id = ANY(${slotIds}) AND status = 'available'
+      RETURNING id
+    `
+
+    // If some slots were grabbed between check and update, rollback
+    if (updated.length !== slotIds.length) {
+      await sql`
+        UPDATE slots SET status = 'available', "pendingExpiresAt" = null
+        WHERE id = ANY(${slotIds})
+      `
+      return NextResponse.json({ error: 'SLOT_UNAVAILABLE' }, { status: 409 })
+    }
+
+    return NextResponse.json({ held: updated.length, pendingExpiresAt })
+  } catch (e) {
+    console.error(e)
     return NextResponse.json({ error: 'SERVER_ERROR' }, { status: 500 })
   }
 }

@@ -6,6 +6,7 @@ const allowedDevOrigins = Array.from(
       ? process.env.NEXT_ALLOWED_DEV_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
       : []),
     // Allow same-Wi-Fi phones/tablets to hit the dev server (HMR + assets).
+    '172.20.10.3',   // ← your current hotspot/WiFi IP
     '192.168.18.149',
     '192.168.1.1',
   ]),

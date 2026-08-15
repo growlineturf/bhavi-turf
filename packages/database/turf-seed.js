@@ -12,7 +12,7 @@ const DB_URL = 'postgresql://neondb_owner:npg_sPD7w5lBqpZN@ep-patient-art-azlzvw
 const sql = neon(DB_URL);
 
 async function seed() {
-  const hash = await bcrypt.hash('Turf@2026', 12);
+  const hash = await bcrypt.hash('Turf@2026', 10);
 
   await sql`
     INSERT INTO admin_users (id, email, "passwordHash", "createdAt", "updatedAt")

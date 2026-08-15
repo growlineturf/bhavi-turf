@@ -1,41 +1,36 @@
 "use client";
-
 import React from "react";
 import { useTurf, TimeFilter } from "@/lib/turfStore";
+
+const FILTERS: { key: TimeFilter; label: string; emoji: string; hours: string }[] = [
+  { key: "twilight", label: "Twilight", emoji: "🌙", hours: "5–8am" },
+  { key: "morning",  label: "Morning",  emoji: "🌅", hours: "8–12pm" },
+  { key: "noon",     label: "Noon",     emoji: "☀️", hours: "12–4pm" },
+  { key: "evening",  label: "Evening",  emoji: "🌆", hours: "4–11pm" },
+];
 
 export default function TimeFilterPills() {
   const { selectedTimeFilter, setSelectedTimeFilter } = useTurf();
 
-  const options: { id: TimeFilter; label: string; icon: string; time: string }[] = [
-    { id: "twilight", label: "Twilight", icon: "🌆", time: "5-8 AM" },
-    { id: "morning", label: "Morning", icon: "🌅", time: "8-12 PM" },
-    { id: "noon", label: "Noon", icon: "☀️", time: "12-4 PM" },
-    { id: "evening", label: "Evening", icon: "🌙", time: "4-12 AM" },
-  ];
-
   return (
-    <div className="w-full bg-zinc-950 py-3 border-b border-zinc-800/60">
-      <div className="mx-auto max-w-xl px-4">
-        <div className="flex items-center justify-between gap-1 overflow-x-auto no-scrollbar py-0.5">
-          {options.map((opt) => {
-            const isSelected = selectedTimeFilter === opt.id;
-            return (
-              <button
-                key={opt.id}
-                onClick={() => setSelectedTimeFilter(opt.id)}
-                className={`btn-pill flex items-center gap-1.5 px-4 py-2 text-xs font-semibold transition-all active:scale-95 whitespace-nowrap ${
-                  isSelected
-                    ? "bg-zinc-800 text-white shadow border border-zinc-700/80"
-                    : "bg-transparent text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <span className="text-sm">{opt.icon}</span>
-                <span>{opt.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+    <div className="flex items-center justify-center gap-1.5 px-4 py-3 border-b border-zinc-900">
+      {FILTERS.map((f) => {
+        const isActive = selectedTimeFilter === f.key;
+        return (
+          <button
+            key={f.key}
+            onClick={() => setSelectedTimeFilter(f.key)}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${
+              isActive
+                ? "bg-zinc-800 text-white shadow-sm"
+                : "text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            <span>{f.emoji}</span>
+            <span>{f.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

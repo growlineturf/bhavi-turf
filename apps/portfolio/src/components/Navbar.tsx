@@ -24,18 +24,30 @@ export default function Navbar() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-            <Trophy className="h-5 w-5" />
+          {/* Logo mark: custom image or default icon */}
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform overflow-hidden shrink-0">
+            {config.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={config.logoUrl}
+                alt={config.turfName}
+                className="h-full w-full object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+              />
+            ) : (
+              <Trophy className="h-5 w-5" />
+            )}
           </div>
           <div>
             <span className="text-lg font-extrabold tracking-tight text-white block leading-none">
-              {config.turfName}
+              {config.logoText || config.turfName}
             </span>
             <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest block mt-0.5">
               {config.city}
             </span>
           </div>
         </Link>
+
 
         {/* Desktop Nav Links */}
         <nav className="hidden md:flex items-center gap-1 rounded-full border border-zinc-800/80 bg-zinc-900/60 px-3 py-1.5 backdrop-blur">

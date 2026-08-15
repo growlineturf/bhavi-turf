@@ -1,38 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { neon } from '@neondatabase/serverless'
 
 export async function GET(req: NextRequest) {
   const secret = req.headers.get('x-cron-secret')
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-
-  const now = new Date()
-
-  // Find expired pending slots
-  const expiredSlots = await prisma.slot.findMany({
-    where: { status: 'pending', pendingExpiresAt: { lt: now } },
-    include: { bookings: { where: { status: 'pending_payment' } } },
-  })
-
-  let released = 0
-  for (const slot of expiredSlots) {
-    await prisma.$transaction([
-      // Reset slot to available
-      prisma.slot.update({
-        where: { id: slot.id },
-        data: { status: 'available', pendingExpiresAt: null },
-      }),
-      // Mark linked bookings as expired
-      ...slot.bookings.map(b =>
-        prisma.booking.update({
-          where: { id: b.id },
-          data: { status: 'expired' },
-        })
-      ),
-    ])
-    released++
+  const sql = neon(process.env.DATABASE_URL!)
+  try {
+    const expired = await sql`
+      UPDATE slots SET status='available', "pendingExpiresAt"=null
+      WHERE status='pending' AND "pendingExpiresAt" < now()
+      RETURNING id
+    `
+    await sql`
+      UPDATE bookings SET status='expired'
+      WHERE status='pending_payment' AND "slotId" = ANY(${expired.map((r: any) => r.id)})
+    `
+    return NextResponse.json({ released: expired.length })
+  } catch (e) {
+    console.error(e)
+    return NextResponse.json({ error: 'SERVER_ERROR' }, { status: 500 })
   }
-
-  return NextResponse.json({ released, timestamp: now.toISOString() })
 }
