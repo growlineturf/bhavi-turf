@@ -71,7 +71,8 @@ export async function POST(req: NextRequest) {
 
     // 2. Batch INSERT all bookings in ONE query + UPDATE slots in ONE query (parallel)
     const bookingValues = ids.map(sid => ({
-      sid, groupId,
+      sid,
+      bookingCode: crypto.randomUUID(), // unique per slot — avoids UNIQUE constraint violation
       customerName: customerName ?? '',
       customerPhone: customerPhone ?? '',
       totalAmount: totalAmount ?? 0,
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
           "totalAmount", "advanceAmount", "gpayNumber", status, "createdAt")
         SELECT
           gen_random_uuid(),
-          (v->>'groupId')::text,
+          (v->>'bookingCode')::text,
           (v->>'sid')::uuid,
           (v->>'customerName')::text,
           (v->>'customerPhone')::text,

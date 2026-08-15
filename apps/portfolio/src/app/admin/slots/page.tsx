@@ -184,13 +184,18 @@ export default function SlotManagerPage() {
 
     if (now - last < 350) {
       // Double tap → open price editor
-      if (slot.status !== 'booked') {
+      if (slot.status !== 'booked' && slot.status !== 'pending') {
         setEditingSlotId(slot.id)
         setEditingPrice(String(Math.round(Number(slot.price))))
       }
     } else {
-      // Single tap → toggle block/unblock
-      if (slot.status !== 'booked' && slot.status !== 'pending') {
+      // Single tap
+      if (slot.status === 'booked') {
+        // Confirm before releasing a booked slot
+        if (confirm(`Release ${slot.startTime} slot back to available? This will remove any associated booking.`)) {
+          releaseBookedSlot(slot)
+        }
+      } else if (slot.status !== 'pending') {
         toggleStatus(slot)
       }
     }
@@ -230,6 +235,18 @@ export default function SlotManagerPage() {
   }
 
   useEffect(() => { load() }, [date])
+
+  /* Release a booked slot (stuck or cancelled) back to available */
+  const releaseBookedSlot = async (slot: Slot) => {
+    setActing(slot.id)
+    await fetch('/api/slots', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: slot.id, status: 'available' }),
+    })
+    setSlots(p => p.map(s => s.id === slot.id ? { ...s, status: 'available' } : s))
+    setActing(null)
+  }
 
   /* Toggle status */
   const toggleStatus = async (slot: Slot) => {
@@ -358,7 +375,7 @@ export default function SlotManagerPage() {
                         onClick={() => handleCardTap(slot)}
                         className={`relative w-full p-2.5 rounded-xl border text-left transition active:scale-95 select-none ${style.card}`}
                         title={
-                          slot.status === 'booked'  ? 'Booked' :
+                          slot.status === 'booked'  ? 'Tap to release this slot back to available' :
                           slot.status === 'pending' ? 'Pending payment' :
                           slot.status === 'blocked' ? 'Tap to unblock · Double-tap to edit price' :
                           'Tap to block · Double-tap to edit price'
