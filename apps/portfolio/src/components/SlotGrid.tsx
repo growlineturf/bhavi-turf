@@ -445,8 +445,8 @@ export default function SlotGrid({ date, period, config }: SlotGridProps) {
   }, [selStart, selEnd]);
 
 
-  /* ── Booking — returns bookingCode for the confirmation screen ── */
-  const handleConfirm = async (name: string, phone: string): Promise<string> => {
+  /* ── Booking ── */
+  const handleConfirm = async (name: string, phone: string): Promise<void> => {
     if (!selectedSlots.length) throw new Error("No slots selected.");
 
     // Skip the hold step — go directly to booking (fewer DB round trips = faster)
