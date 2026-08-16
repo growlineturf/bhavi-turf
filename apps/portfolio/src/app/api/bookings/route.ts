@@ -117,13 +117,12 @@ export async function PATCH(req: NextRequest) {
   const { id, status } = await req.json()
   try {
     const bookings = await sql`
-      UPDATE bookings SET
-        status = ${status},
-        "confirmedAt" = ${status === 'confirmed' ? new Date().toISOString() : null},
-        "confirmedByAdmin" = ${status === 'confirmed'}
+      UPDATE bookings SET status = ${status}
       WHERE id = ${id} RETURNING *
     `
     const b = bookings[0]
+    if (!b) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
+
     if (status === 'confirmed') {
       await sql`UPDATE slots SET status='booked' WHERE id=${b.slotId}`
     } else if (status === 'cancelled') {
