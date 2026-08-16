@@ -9,6 +9,35 @@ interface Booking {
   slot: { startTime: string; endTime: string; sport: string; date: string }
 }
 
+/* Merge consecutive slots from the same customer into one group */
+interface BookingGroup {
+  ids: string[]           // all booking IDs in this group
+  primary: Booking        // first booking (for customer info)
+  startTime: string       // earliest slot startTime
+  endTime: string         // latest slot endTime
+  status: string
+}
+
+function groupBookings(list: Booking[]): BookingGroup[] {
+  const sorted = [...list].sort((a, b) => a.slot.startTime.localeCompare(b.slot.startTime))
+  const groups: BookingGroup[] = []
+  for (const b of sorted) {
+    const last = groups[groups.length - 1]
+    if (
+      last &&
+      last.primary.customerPhone === b.customerPhone &&
+      last.status === b.status &&
+      last.endTime === b.slot.startTime   // slots are consecutive
+    ) {
+      last.ids.push(b.id)
+      last.endTime = b.slot.endTime
+    } else {
+      groups.push({ ids: [b.id], primary: b, startTime: b.slot.startTime, endTime: b.slot.endTime, status: b.status })
+    }
+  }
+  return groups
+}
+
 /* Generate today + next 7 days */
 function getDates() {
   const base = new Date(); base.setHours(0,0,0,0)
@@ -58,15 +87,18 @@ export default function TodayPage() {
   useEffect(() => { load(selDate) }, [selDate, load])
   useEffect(() => { const iv = setInterval(() => load(selDate), 15000); return () => clearInterval(iv) }, [selDate, load])
 
-  const cancelBooking = async (id: string) => {
-    setCancelling(id)
+  const cancelBooking = async (ids: string[]) => {
+    setCancelling(ids[0])
     try {
-      await fetch('/api/bookings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status: 'cancelled' }),
-      })
-      setBookings(p => p.filter(b => b.id !== id))
+      // Cancel ALL slots in the group
+      await Promise.all(ids.map(id =>
+        fetch('/api/bookings', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, status: 'cancelled' }),
+        })
+      ))
+      setBookings(p => p.filter(b => !ids.includes(b.id)))
     } finally { setCancelling(null); setConfirming(null) }
   }
 
@@ -87,8 +119,8 @@ export default function TodayPage() {
     return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${h < 12 ? 'AM' : 'PM'}`
   }
 
-  const confirmed = bookings.filter(b => b.status === 'confirmed')
-  const pending   = bookings.filter(b => b.status === 'pending_payment')
+  const confirmed = groupBookings(bookings.filter(b => b.status === 'confirmed'))
+  const pending   = groupBookings(bookings.filter(b => b.status === 'pending_payment'))
 
   return (
     <div className="space-y-5 max-w-3xl mx-auto">
@@ -160,14 +192,14 @@ export default function TodayPage() {
               ⏳ Pending ({pending.length})
             </p>
           )}
-          {pending.map(b => (
-            <BookingCard key={b.id} b={b} fmt={fmt}
+          {pending.map(g => (
+            <BookingCard key={g.ids[0]} g={g} fmt={fmt}
               cancelling={cancelling} confirming={confirming}
               confirmingId={confirmingId}
-              onCancel={() => setConfirming(b.id)}
-              onCancelConfirm={() => cancelBooking(b.id)}
+              onCancel={() => setConfirming(g.ids[0])}
+              onCancelConfirm={() => cancelBooking(g.ids)}
               onCancelAbort={() => setConfirming(null)}
-              onConfirm={() => confirmBooking(b.id)}
+              onConfirm={() => confirmBooking(g.ids[0])}
             />
           ))}
 
@@ -177,14 +209,14 @@ export default function TodayPage() {
               ✓ Confirmed ({confirmed.length})
             </p>
           )}
-          {confirmed.map(b => (
-            <BookingCard key={b.id} b={b} fmt={fmt}
+          {confirmed.map(g => (
+            <BookingCard key={g.ids[0]} g={g} fmt={fmt}
               cancelling={cancelling} confirming={confirming}
               confirmingId={confirmingId}
-              onCancel={() => setConfirming(b.id)}
-              onCancelConfirm={() => cancelBooking(b.id)}
+              onCancel={() => setConfirming(g.ids[0])}
+              onCancelConfirm={() => cancelBooking(g.ids)}
               onCancelAbort={() => setConfirming(null)}
-              onConfirm={() => confirmBooking(b.id)}
+              onConfirm={() => confirmBooking(g.ids[0])}
             />
           ))}
 
@@ -207,45 +239,50 @@ export default function TodayPage() {
 }
 
 /* ── Booking Card ────────────────────────────────────────────── */
-function BookingCard({ b, fmt, cancelling, confirming, confirmingId, onCancel, onCancelConfirm, onCancelAbort, onConfirm }: {
-  b: Booking; fmt: (t: string) => string
+function BookingCard({ g, fmt, cancelling, confirming, confirmingId, onCancel, onCancelConfirm, onCancelAbort, onConfirm }: {
+  g: BookingGroup; fmt: (t: string) => string
   cancelling: string | null; confirming: string | null; confirmingId: string | null
   onCancel: () => void; onCancelConfirm: () => void; onCancelAbort: () => void
   onConfirm: () => void
 }) {
-  const isPending   = b.status === 'pending_payment'
-  const isCancelling = cancelling === b.id
-  const isConfirming = confirmingId === b.id
+  const { primary, startTime, endTime, ids } = g
+  const isPending    = primary.status === 'pending_payment'
+  const isCancelling = cancelling === ids[0]
+  const isConfirming = confirmingId === ids[0]
+  const timeLabel    = `${fmt(startTime)} – ${fmt(endTime)}`
 
   return (
     <div className={`bg-zinc-900 border rounded-2xl p-4 space-y-3 ${isPending ? 'border-amber-800/50' : 'border-zinc-800'}`}>
       <div className="flex items-center justify-between">
         <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-          isPending
-            ? 'text-amber-400 bg-amber-900/30'
-            : 'text-emerald-400 bg-emerald-900/30'
+          isPending ? 'text-amber-400 bg-amber-900/30' : 'text-emerald-400 bg-emerald-900/30'
         }`}>
           {isPending ? '⏳ Pending' : '✓ Confirmed'}
         </span>
+        {ids.length > 1 && (
+          <span className="text-[10px] text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
+            {ids.length} slots
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <div>
           <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-0.5">Customer</p>
-          <p className="font-bold text-white text-sm">{b.customerName}</p>
-          <a href={`tel:${b.customerPhone}`} className="flex items-center gap-1 text-blue-400 text-xs hover:underline mt-0.5">
-            <Phone size={10} /> {b.customerPhone}
+          <p className="font-bold text-white text-sm">{primary.customerName}</p>
+          <a href={`tel:${primary.customerPhone}`} className="flex items-center gap-1 text-blue-400 text-xs hover:underline mt-0.5">
+            <Phone size={10} /> {primary.customerPhone}
           </a>
         </div>
         <div>
           <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-0.5">Time</p>
-          <p className="font-bold text-white text-sm">{fmt(b.slot.startTime)}</p>
-          <p className="text-zinc-400 text-xs">{b.slot.sport}</p>
+          <p className="font-bold text-white text-sm leading-tight">{timeLabel}</p>
+          <p className="text-zinc-400 text-xs">{primary.slot.sport}</p>
         </div>
         <div>
           <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-0.5">Advance</p>
-          <p className="font-bold text-green-400 text-sm">₹{b.advanceAmount}</p>
-          <p className="text-zinc-500 text-xs">of ₹{b.totalAmount}</p>
+          <p className="font-bold text-green-400 text-sm">₹{primary.advanceAmount}</p>
+          <p className="text-zinc-500 text-xs">of ₹{primary.totalAmount}</p>
         </div>
       </div>
 
@@ -259,15 +296,16 @@ function BookingCard({ b, fmt, cancelling, confirming, confirmingId, onCancel, o
       )}
 
       {/* Cancel */}
-      {confirming === b.id ? (
+      {confirming === ids[0] ? (
         <div className="bg-red-950/40 border border-red-800/50 rounded-xl p-3 space-y-2">
           <div className="flex items-center gap-2 text-red-400">
             <AlertTriangle size={14} />
             <span className="text-sm font-bold">Cancel this booking?</span>
           </div>
           <p className="text-xs text-zinc-400 leading-relaxed">
-            This will cancel <strong className="text-white">{b.customerName}</strong>&apos;s slot at{' '}
-            <strong className="text-white">{fmt(b.slot.startTime)}</strong> and make it available again.
+            This will cancel <strong className="text-white">{primary.customerName}</strong>&apos;s{' '}
+            {ids.length > 1 ? `${ids.length} slots` : 'slot'} at{' '}
+            <strong className="text-white">{timeLabel}</strong> and make them available again.
           </p>
           <div className="flex gap-2 pt-1">
             <button onClick={onCancelConfirm} disabled={isCancelling}
