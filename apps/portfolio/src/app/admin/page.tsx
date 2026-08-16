@@ -1,14 +1,52 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { CheckCircle, XCircle, RefreshCw, Phone, Clock, MessageSquare } from 'lucide-react'
+import { CheckCircle, XCircle, RefreshCw, Phone, MessageSquare } from 'lucide-react'
 
 interface Slot { id: string; date: string; startTime: string; endTime: string; sport: string; pendingExpiresAt?: string }
 interface Booking {
   id: string; customerName: string; customerPhone: string
   totalAmount: number; advanceAmount: number; gpayNumber: string
   status: string; createdAt: string; slot: Slot
-  pendingExpiresAt?: string
+}
+
+/* Group consecutive slots from same customer into one request */
+interface BookingGroup {
+  ids: string[]
+  primary: Booking
+  startTime: string
+  endTime: string
+}
+
+function groupBookings(list: Booking[]): BookingGroup[] {
+  const sorted = [...list].sort((a, b) => {
+    const dateA = a.slot?.date ?? ''
+    const dateB = b.slot?.date ?? ''
+    if (dateA !== dateB) return dateA.localeCompare(dateB)
+    return (a.slot?.startTime ?? '').localeCompare(b.slot?.startTime ?? '')
+  })
+
+  const groups: BookingGroup[] = []
+  for (const b of sorted) {
+    const last = groups[groups.length - 1]
+    if (
+      last &&
+      last.primary.customerPhone === b.customerPhone &&
+      last.primary.slot?.date === b.slot?.date &&
+      last.endTime === b.slot?.startTime
+    ) {
+      last.ids.push(b.id)
+      last.endTime = b.slot?.endTime ?? last.endTime
+    } else {
+      groups.push({
+        ids: [b.id],
+        primary: b,
+        startTime: b.slot?.startTime ?? '',
+        endTime: b.slot?.endTime ?? '',
+      })
+    }
+  }
+  return groups
 }
 
 function Countdown({ expiresAt }: { expiresAt?: string }) {
@@ -27,8 +65,8 @@ function Countdown({ expiresAt }: { expiresAt?: string }) {
 
 export default function AdminPendingPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
-  const [loading, setLoading] = useState(true)
-  const [acting, setActing] = useState<string | null>(null)
+  const [loading, setLoading]   = useState(true)
+  const [acting, setActing]     = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -40,14 +78,19 @@ export default function AdminPendingPage() {
   useEffect(() => { load() }, [load])
   useEffect(() => { const iv = setInterval(load, 15000); return () => clearInterval(iv) }, [load])
 
-  const act = async (id: string, status: 'confirmed' | 'cancelled') => {
-    setActing(id)
-    await fetch('/api/bookings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) })
-    setBookings(p => p.filter(b => b.id !== id))
+  /* Act on ALL IDs in the group (confirm/reject every slot together) */
+  const act = async (ids: string[], status: 'confirmed' | 'cancelled') => {
+    setActing(ids[0])
+    await Promise.all(ids.map(id =>
+      fetch('/api/bookings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) })
+    ))
+    setBookings(p => p.filter(b => !ids.includes(b.id)))
     setActing(null)
   }
 
   const waLink = (b: Booking) => `https://wa.me/91${b.customerPhone.replace(/\D/g,'').slice(-10)}`
+
+  const groups = groupBookings(bookings)
 
   if (loading) return <div className="text-zinc-500 text-sm pt-8 text-center">Loading pending bookings...</div>
 
@@ -63,7 +106,7 @@ export default function AdminPendingPage() {
         </button>
       </div>
 
-      {bookings.length === 0 && (
+      {groups.length === 0 && (
         <div className="text-center py-20 text-zinc-600">
           <CheckCircle size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-semibold">No pending bookings</p>
@@ -72,55 +115,66 @@ export default function AdminPendingPage() {
       )}
 
       <div className="space-y-3">
-        {bookings.map(b => (
-          <div key={b.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-              <div className="flex items-center gap-3">
-                <Countdown expiresAt={b.slot?.pendingExpiresAt} />
+        {groups.map(g => {
+          const { primary, ids, startTime, endTime } = g
+          const isActing = acting === ids[0]
+          return (
+            <div key={ids[0]} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+                <div className="flex items-center gap-3">
+                  <Countdown expiresAt={primary.slot?.pendingExpiresAt} />
+                  {ids.length > 1 && (
+                    <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full">
+                      {ids.length} slots
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs text-zinc-500">{new Date(primary.createdAt).toLocaleString('en-IN')}</span>
               </div>
-              <span className="text-xs text-zinc-500">{new Date(b.createdAt).toLocaleString('en-IN')}</span>
-            </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Customer</p>
-                <p className="font-bold text-white">{b.customerName}</p>
-                <a href={`tel:${b.customerPhone}`} className="flex items-center gap-1 text-blue-400 text-sm mt-0.5 hover:underline">
-                  <Phone size={11} /> {b.customerPhone}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Customer</p>
+                  <p className="font-bold text-white">{primary.customerName}</p>
+                  <a href={`tel:${primary.customerPhone}`} className="flex items-center gap-1 text-blue-400 text-sm mt-0.5 hover:underline">
+                    <Phone size={11} /> {primary.customerPhone}
+                  </a>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Slot</p>
+                  <p className="font-bold text-white">{startTime} – {endTime}</p>
+                  <p className="text-zinc-400 text-sm">
+                    {primary.slot?.sport} · {new Date(primary.slot?.date).toLocaleDateString('en-IN', { day:'numeric', month:'short' })}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Payment</p>
+                  <p className="font-bold text-green-400">₹{primary.advanceAmount} advance</p>
+                  <p className="text-zinc-400 text-sm">Total ₹{primary.totalAmount}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">GPay No.</p>
+                  <p className="font-mono text-white text-sm">{primary.gpayNumber}</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-3 border-t border-zinc-800">
+                <a href={waLink(primary)} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-bold transition">
+                  <MessageSquare size={14} /> Check Screenshot
                 </a>
-              </div>
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Slot</p>
-                <p className="font-bold text-white">{b.slot?.startTime} – {b.slot?.endTime}</p>
-                <p className="text-zinc-400 text-sm">{b.slot?.sport} · {new Date(b.slot?.date).toLocaleDateString('en-IN', { day:'numeric', month:'short' })}</p>
-              </div>
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Payment</p>
-                <p className="font-bold text-green-400">₹{b.advanceAmount} advance</p>
-                <p className="text-zinc-400 text-sm">Total ₹{b.totalAmount}</p>
-              </div>
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">GPay No.</p>
-                <p className="font-mono text-white text-sm">{b.gpayNumber}</p>
+                <button onClick={() => act(ids, 'confirmed')} disabled={isActing}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-bold transition">
+                  <CheckCircle size={14} /> Confirm Booking
+                </button>
+                <button onClick={() => act(ids, 'cancelled')} disabled={isActing}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-red-900/40 hover:text-red-400 text-zinc-400 text-sm font-semibold transition">
+                  <XCircle size={14} /> Reject
+                </button>
               </div>
             </div>
-
-            <div className="flex flex-wrap gap-2 pt-3 border-t border-zinc-800">
-              <a href={waLink(b)} target="_blank" rel="noreferrer"
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-bold transition">
-                <MessageSquare size={14} /> Check Screenshot
-              </a>
-              <button onClick={() => act(b.id, 'confirmed')} disabled={acting === b.id}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-bold transition">
-                <CheckCircle size={14} /> Confirm Booking
-              </button>
-              <button onClick={() => act(b.id, 'cancelled')} disabled={acting === b.id}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-red-900/40 hover:text-red-400 text-zinc-400 text-sm font-semibold transition">
-                <XCircle size={14} /> Reject
-              </button>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
