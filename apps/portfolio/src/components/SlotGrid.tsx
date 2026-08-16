@@ -213,7 +213,7 @@ function BookingSheet({
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={step === "done" ? undefined : onClose} />
-      <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[#0f0f0f] border-t border-zinc-800 shadow-2xl overflow-y-auto max-h-[92dvh]">
+      <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[#0f0f0f] border-t border-zinc-800 shadow-2xl overflow-y-auto overflow-x-hidden max-h-[92dvh]">
         <div className="max-w-lg mx-auto px-5 pt-4 pb-10 space-y-4">
           <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-2" />
 
@@ -287,9 +287,9 @@ function BookingSheet({
                   ["Name",     name],
                   ["Phone",    phone],
                 ].map(([label, value]) => (
-                  <div key={String(label)} className="flex items-center justify-between px-4 py-2">
-                    <span className="text-[11px] text-zinc-500">{label}</span>
-                    <span className="text-xs font-bold text-white text-right">{value}</span>
+                  <div key={String(label)} className="flex items-center justify-between px-4 py-2 gap-3">
+                    <span className="text-[11px] text-zinc-500 shrink-0">{label}</span>
+                    <span className="text-xs font-bold text-white text-right min-w-0 break-words">{value}</span>
                   </div>
                 ))}
               </div>
@@ -319,7 +319,7 @@ function BookingSheet({
                       : "bg-zinc-900 border-zinc-700"
                   }`}
                 >
-                  <span className="font-mono font-black text-white text-lg tracking-widest">{config.gpayNumber}</span>
+                  <span className="font-mono font-black text-white text-base tracking-wide truncate">{config.gpayNumber}</span>
                   <span className={`text-sm font-bold px-3 py-1.5 rounded-lg transition ${copiedGpay ? "bg-emerald-600 text-white" : "bg-blue-600 text-white"}`}>
                     {copiedGpay ? "✓ Copied!" : "📋 Copy"}
                   </span>
