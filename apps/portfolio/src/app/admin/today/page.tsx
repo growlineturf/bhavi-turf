@@ -229,7 +229,7 @@ export default function TodayPage() {
               </p>
             </div>
             <span className="text-green-400 font-black text-lg">
-              ₹{confirmed.reduce((s, b) => s + Number(b.advanceAmount), 0)}
+              ₹{confirmed.reduce((s, g) => s + Number(g.primary.advanceAmount), 0)}
             </span>
           </div>
         </div>
