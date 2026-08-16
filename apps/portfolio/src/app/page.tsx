@@ -32,7 +32,7 @@ export default function HomePage() {
         {/* Background Image with Dark Overlay */}
         <div
           className="absolute inset-0 bg-cover bg-center transition-all duration-700 filter brightness-[0.4]"
-          style={{ backgroundImage: `url('${config.heroBannerUrl}')` }}
+          style={config.heroBannerUrl ? { backgroundImage: `url('${config.heroBannerUrl}')` } : {}}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent"></div>
 

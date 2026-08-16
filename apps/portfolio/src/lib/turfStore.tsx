@@ -92,34 +92,39 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
   const [selectedDate, setSelectedDate] = useState(dates[0].dateStr);
   const [selectedTimeFilter, setSelectedTimeFilter] = useState<TimeFilter>("evening");
 
-  // Load site settings from DB
+  // Load site settings from DB + re-fetch every 30s so changes from admin show up automatically
   useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => r.json())
-      .then((s) => {
-        if (!s) return;
-        setConfig((prev) => ({
-          ...prev,
-          turfName:      s.turfName      ?? prev.turfName,
-          city:          s.city          ?? prev.city,
-          gpayNumber:    s.gpayNumber    ?? prev.gpayNumber,
-          advanceAmount: s.advanceAmount != null ? Number(s.advanceAmount) : prev.advanceAmount,
-          whatsappNumber: s.whatsappNumber
-            ? `91${s.whatsappNumber.replace(/\D/g, "").slice(-10)}`
-            : prev.whatsappNumber,
-          heroTitle:     s.heroTitle     ?? prev.heroTitle,
-          heroTagline:   s.heroTagline   ?? prev.heroTagline,
-          heroBannerUrl: s.heroBannerUrl ?? prev.heroBannerUrl,
-          logoUrl:       s.logoUrl       ?? prev.logoUrl,
-          logoText:      s.logoText      ?? prev.logoText,
-          openingHours:  s.openingHours  ?? prev.openingHours,
-          googleMapsUrl: s.googleMapsUrl ?? prev.googleMapsUrl,
-          instagramUrl:  s.instagramUrl  ?? prev.instagramUrl,
-          primaryColor:  s.primaryColor  ?? prev.primaryColor,
-          sportsOffered: s.sportsOffered ?? prev.sportsOffered,
-        }));
-      })
-      .catch(() => {});
+    const load = () =>
+      fetch("/api/settings")
+        .then((r) => r.json())
+        .then((s) => {
+          if (!s) return;
+          setConfig((prev) => ({
+            ...prev,
+            turfName:      s.turfName      ?? prev.turfName,
+            city:          s.city          ?? prev.city,
+            gpayNumber:    s.gpayNumber    ?? prev.gpayNumber,
+            advanceAmount: s.advanceAmount != null ? Number(s.advanceAmount) : prev.advanceAmount,
+            whatsappNumber: s.whatsappNumber
+              ? `91${s.whatsappNumber.replace(/\D/g, "").slice(-10)}`
+              : prev.whatsappNumber,
+            heroTitle:     s.heroTitle     ?? prev.heroTitle,
+            heroTagline:   s.heroTagline   ?? prev.heroTagline,
+            heroBannerUrl: s.heroBannerUrl || prev.heroBannerUrl,
+            logoUrl:       s.logoUrl       ?? prev.logoUrl,
+            logoText:      s.logoText      ?? prev.logoText,
+            openingHours:  s.openingHours  ?? prev.openingHours,
+            googleMapsUrl: s.googleMapsUrl ?? prev.googleMapsUrl,
+            instagramUrl:  s.instagramUrl  ?? prev.instagramUrl,
+            primaryColor:  s.primaryColor  ?? prev.primaryColor,
+            sportsOffered: s.sportsOffered ?? prev.sportsOffered,
+          }));
+        })
+        .catch(() => {});
+
+    load();                              // immediate on mount
+    const id = setInterval(load, 30000); // refresh every 30s
+    return () => clearInterval(id);
   }, []);
 
   return (

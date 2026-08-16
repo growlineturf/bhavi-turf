@@ -112,9 +112,18 @@ function SegmentBlock({
 
         {/* Center label */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          {avail && !sel && <span className="text-[9px] font-semibold text-blue-400/60 select-none">{fmtDur(n * 30)}</span>}
-          {avail &&  sel && <span className="text-[9px] font-bold  text-white/80 select-none">✓ {fmtDur(n * 30)}</span>}
-          {!avail        && <span className="text-[9px] text-zinc-700 select-none">✕</span>}
+          {(() => {
+            const segDurMins = n > 0
+              ? toMins(segment.slots[n - 1].endTime) - toMins(segment.slots[0].startTime)
+              : 0;
+            return (
+              <>
+                {avail && !sel && <span className="text-[9px] font-semibold text-blue-400/60 select-none">{fmtDur(segDurMins)}</span>}
+                {avail &&  sel && <span className="text-[9px] font-bold  text-white/80 select-none">✓ {fmtDur(segDurMins)}</span>}
+                {!avail        && <span className="text-[9px] text-zinc-700 select-none">✕</span>}
+              </>
+            );
+          })()}
         </div>
       </div>
 
@@ -168,7 +177,9 @@ function BookingSheet({
   // Snapshot slot data on mount — survives when slots get marked booked after confirm
   const [snapshot] = useState(() => ({
     total:  selectedSlots.reduce((s, sl) => s + Number(sl.price), 0),
-    durMin: selectedSlots.length * 30,
+    durMin: selectedSlots.length > 0
+      ? toMins(selectedSlots[selectedSlots.length - 1].endTime) - toMins(selectedSlots[0].startTime)
+      : 0,
     start:  selectedSlots[0]?.startTime ?? "",
     end:    selectedSlots[selectedSlots.length - 1]?.endTime ?? "",
   }));
@@ -421,7 +432,9 @@ export default function SlotGrid({ date, period, config }: SlotGridProps) {
     return m >= lo && m <= hi && s.status === "available";
   });
   const totalPrice = selectedSlots.reduce((s, sl) => s + Number(sl.price), 0);
-  const durMins    = selectedSlots.length * 30;
+  const durMins = selectedSlots.length > 0
+    ? toMins(selectedSlots[selectedSlots.length - 1].endTime) - toMins(selectedSlots[0].startTime)
+    : 0;
 
   /* ── TAP HANDLER — tap to start, tap again to extend ─────── */
   const handleSlotTap = useCallback((slot: Slot) => {

@@ -4,6 +4,9 @@ import { neon } from '@neondatabase/serverless'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function ensureColumns(sql: any) {
   // Add new columns safely — idempotent, runs on first request
+  await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "heroTitle"     TEXT NOT NULL DEFAULT ''`
+  await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "heroTagline"   TEXT NOT NULL DEFAULT ''`
+  await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "heroBannerUrl" TEXT NOT NULL DEFAULT ''`
   await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "logoUrl"       TEXT NOT NULL DEFAULT ''`
   await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "logoText"      TEXT NOT NULL DEFAULT ''`
   await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "openingHours"  TEXT NOT NULL DEFAULT '5 AM – 11 PM'`

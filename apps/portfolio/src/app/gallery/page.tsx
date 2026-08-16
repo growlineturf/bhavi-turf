@@ -11,12 +11,12 @@ export default function GalleryPage() {
   const { config } = useTurf();
 
   const photos = [
-    { title: "FIFA Grade Pitch Arena", img: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=1000&q=80", tag: "Main Ground" },
-    { title: "24/7 High-Lux Floodlight Arena", img: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1000&q=80", tag: "Night Arena" },
-    { title: "Box Cricket Enclosure Net", img: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=1000&q=80", tag: "Box Cricket" },
-    { title: "Dugout & Player Seating Lounge", img: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1000&q=80", tag: "Amenities" },
-    { title: "Weekend Football Match Action", img: "https://images.unsplash.com/photo-1518091043644-c1d4457512c6?auto=format&fit=crop&w=1000&q=80", tag: "Football" },
-    { title: "Tournament Trophy Presentation", img: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1000&q=80", tag: "Tournaments" },
+    { title: "FIFA Grade Pitch Arena",          img: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=1000&q=80", tag: "Main Ground" },
+    { title: "24/7 High-Lux Floodlight Arena",  img: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1000&q=80", tag: "Night Arena" },
+    { title: "Box Cricket Enclosure Net",        img: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=1000&q=80", tag: "Box Cricket" },
+    { title: "Dugout & Player Seating Lounge",   img: "https://images.unsplash.com/photo-1524117074681-31bd4de22ad3?auto=format&fit=crop&w=1000&q=80", tag: "Amenities" },
+    { title: "Weekend Football Match Action",    img: "https://images.unsplash.com/photo-1518091043644-c1d4457512c6?auto=format&fit=crop&w=1000&q=80", tag: "Football" },
+    { title: "Tournament Trophy Presentation",  img: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1000&q=80", tag: "Tournaments" },
   ];
 
   return (
