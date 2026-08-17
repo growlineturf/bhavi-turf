@@ -4,7 +4,8 @@ import { neon } from '@neondatabase/serverless'
 function db() { return neon(process.env.DATABASE_URL!) }
 
 /** Ensure groupId column exists on bookings (idempotent, runs once per cold start effectively) */
-async function ensureGroupId(sql: ReturnType<typeof neon>) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function ensureGroupId(sql: any) {
   try {
     await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "groupId" UUID`
   } catch { /* already exists or unsupported — safe to ignore */ }
