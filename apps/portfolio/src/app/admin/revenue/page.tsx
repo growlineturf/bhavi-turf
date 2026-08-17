@@ -4,14 +4,64 @@ import { useState, useEffect } from 'react'
 import { BarChart3 } from 'lucide-react'
 
 interface Booking {
-  id: string; customerName: string; totalAmount: number; advanceAmount: number
-  confirmedAt: string; slot: { startTime: string; sport: string; date: string }
+  id: string; customerName: string; customerPhone?: string
+  totalAmount: number; advanceAmount: number
+  groupId?: string
+  slot: { startTime: string; endTime: string; sport: string; date: string }
+}
+
+/**
+ * Deduplicate multi-slot bookings so each booking session shows as ONE row.
+ * Strategy (in order):
+ *   1. If groupId present → keep only the first record per groupId
+ *   2. Legacy (no groupId) → merge consecutive same-customer same-date slots
+ */
+function dedupeBookings(list: Booking[]): Booking[] {
+  const sorted = [...list].sort((a, b) => {
+    const da = a.slot?.date ?? '', db = b.slot?.date ?? ''
+    if (da !== db) return da.localeCompare(db)
+    return (a.slot?.startTime ?? '').localeCompare(b.slot?.startTime ?? '')
+  })
+
+  const seenGroupIds = new Set<string>()
+  const result: Booking[] = []
+
+  for (const b of sorted) {
+    if (b.groupId) {
+      // New booking: deduplicate by groupId
+      if (!seenGroupIds.has(b.groupId)) {
+        seenGroupIds.add(b.groupId)
+        result.push(b)
+      }
+    } else {
+      // Legacy: merge consecutive same-customer same-date slots
+      const last = result[result.length - 1]
+      if (
+        last &&
+        !last.groupId &&
+        last.customerName === b.customerName &&
+        (last.customerPhone ?? '') === (b.customerPhone ?? '') &&
+        last.slot?.date === b.slot?.date &&
+        last.slot?.endTime === b.slot?.startTime
+      ) {
+        // Extend the last entry's endTime (mutate a copy)
+        result[result.length - 1] = {
+          ...last,
+          slot: { ...last.slot, endTime: b.slot.endTime },
+        }
+      } else {
+        result.push(b)
+      }
+    }
+  }
+
+  return result
 }
 
 export default function RevenuePage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [from, setFrom] = useState(() => new Date(Date.now() - 7*86400000).toISOString().split('T')[0])
-  const [to, setTo] = useState(() => new Date().toISOString().split('T')[0])
+  const [to, setTo]     = useState(() => new Date().toISOString().split('T')[0])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -19,16 +69,17 @@ export default function RevenuePage() {
     fetch('/api/bookings?status=confirmed')
       .then(r => r.json())
       .then((all: Booking[]) => {
-        setBookings(all.filter(b => {
+        const filtered = all.filter(b => {
           const d = b.slot?.date?.split('T')[0]
           return d >= from && d <= to
-        }))
+        })
+        setBookings(dedupeBookings(filtered))
         setLoading(false)
       })
   }, [from, to])
 
-  const totalAdv = bookings.reduce((s,b) => s + Number(b.advanceAmount), 0)
-  const totalFull = bookings.reduce((s,b) => s + Number(b.totalAmount), 0)
+  const totalAdv       = bookings.reduce((s, b) => s + Number(b.advanceAmount), 0)
+  const totalFull      = bookings.reduce((s, b) => s + Number(b.totalAmount), 0)
   const totalRemaining = totalFull - totalAdv
 
   return (
@@ -50,9 +101,9 @@ export default function RevenuePage() {
 
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Advance Collected', value: totalAdv, color: 'text-green-400' },
-          { label: 'Total Value', value: totalFull, color: 'text-blue-400' },
-          { label: 'Remaining Due', value: totalRemaining, color: 'text-yellow-400' },
+          { label: 'Advance Collected', value: totalAdv,       color: 'text-green-400' },
+          { label: 'Total Value',       value: totalFull,      color: 'text-blue-400' },
+          { label: 'Remaining Due',     value: totalRemaining, color: 'text-yellow-400' },
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
             <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">{label}</p>
