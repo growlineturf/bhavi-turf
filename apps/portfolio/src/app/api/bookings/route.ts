@@ -3,6 +3,13 @@ import { neon } from '@neondatabase/serverless'
 
 function db() { return neon(process.env.DATABASE_URL!) }
 
+/** Ensure groupId column exists on bookings (idempotent, runs once per cold start effectively) */
+async function ensureGroupId(sql: ReturnType<typeof neon>) {
+  try {
+    await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "groupId" UUID`
+  } catch { /* already exists or unsupported — safe to ignore */ }
+}
+
 // GET bookings (admin)
 export async function GET(req: NextRequest) {
   const sql = db()
@@ -41,7 +48,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST — create booking(s) for a selected range (atomic: 2 DB calls total)
+// POST — atomically claim slots then insert bookings
 export async function POST(req: NextRequest) {
   const sql = db()
   const body = await req.json()
@@ -51,60 +58,66 @@ export async function POST(req: NextRequest) {
   if (!ids.length) return NextResponse.json({ error: 'slotIds required' }, { status: 400 })
 
   try {
-    // 1. Get settings + verify slots available — one query
-    const [settings, slots] = await Promise.all([
-      sql`SELECT "advanceAmount","gpayNumber" FROM settings WHERE id='singleton' LIMIT 1`,
-      sql`SELECT id, status FROM slots WHERE id = ANY(${ids})`,
-    ])
+    await ensureGroupId(sql)
 
+    // 1. Fetch settings
+    const settings = await sql`SELECT "advanceAmount","gpayNumber" FROM settings WHERE id='singleton' LIMIT 1`
     const adv  = advanceAmount ?? settings[0]?.advanceAmount ?? 500
     const gpay = gpayNumber   ?? settings[0]?.gpayNumber   ?? ''
 
-    const invalid = slots.filter((s: any) =>
-      s.status !== 'available' && s.status !== 'pending'
-    )
-    if (invalid.length > 0) {
+    // 2. Atomically claim slots — UPDATE is the gate, not a preceding SELECT
+    //    Only slots currently 'available' or 'pending' can be claimed.
+    const claimed = await sql`
+      UPDATE slots
+      SET status = 'booked', "pendingExpiresAt" = null
+      WHERE id = ANY(${ids}) AND status IN ('available', 'pending')
+      RETURNING id
+    `
+
+    const claimedIds = claimed.map((r: any) => String(r.id))
+
+    // 3. If we couldn't claim all requested slots, roll back ONLY what we just locked
+    if (claimedIds.length !== ids.length) {
+      if (claimedIds.length > 0) {
+        await sql`
+          UPDATE slots SET status = 'available', "pendingExpiresAt" = null
+          WHERE id = ANY(${claimedIds})
+        `
+      }
       return NextResponse.json({ error: 'SLOT_UNAVAILABLE' }, { status: 409 })
     }
 
-    const groupId = crypto.randomUUID()
-
-    // 2. Batch INSERT all bookings in ONE query + UPDATE slots in ONE query (parallel)
-    const bookingValues = ids.map(sid => ({
+    // 4. All slots claimed — insert booking rows (one per slot, shared groupId)
+    const groupId  = crypto.randomUUID()
+    const bookingValues = claimedIds.map(sid => ({
       sid,
-      bookingCode: crypto.randomUUID(), // unique per slot — avoids UNIQUE constraint violation
+      groupId,
+      bookingCode: crypto.randomUUID(), // unique per slot
       customerName: customerName ?? '',
       customerPhone: customerPhone ?? '',
       totalAmount: totalAmount ?? 0,
       adv, gpay,
     }))
 
-    await Promise.all([
-      // Batch insert via json_array_elements
-      sql`
-        INSERT INTO bookings (id, "bookingCode", "slotId", "customerName", "customerPhone",
-          "totalAmount", "advanceAmount", "gpayNumber", status, "createdAt")
-        SELECT
-          gen_random_uuid(),
-          (v->>'bookingCode')::text,
-          (v->>'sid')::uuid,
-          (v->>'customerName')::text,
-          (v->>'customerPhone')::text,
-          (v->>'totalAmount')::numeric,
-          (v->>'adv')::numeric,
-          (v->>'gpay')::text,
-          'pending_payment',
-          now()
-        FROM json_array_elements(${JSON.stringify(bookingValues)}::json) AS v
-      `,
-      // Mark all slots booked
-      sql`
-        UPDATE slots SET status='booked', "pendingExpiresAt"=null
-        WHERE id = ANY(${ids})
-      `,
-    ])
+    await sql`
+      INSERT INTO bookings (id, "bookingCode", "groupId", "slotId", "customerName", "customerPhone",
+        "totalAmount", "advanceAmount", "gpayNumber", status, "createdAt")
+      SELECT
+        gen_random_uuid(),
+        (v->>'bookingCode')::text,
+        (v->>'groupId')::uuid,
+        (v->>'sid')::uuid,
+        (v->>'customerName')::text,
+        (v->>'customerPhone')::text,
+        (v->>'totalAmount')::numeric,
+        (v->>'adv')::numeric,
+        (v->>'gpay')::text,
+        'pending_payment',
+        now()
+      FROM json_array_elements(${JSON.stringify(bookingValues)}::json) AS v
+    `
 
-    return NextResponse.json({ success: true, slotCount: ids.length })
+    return NextResponse.json({ success: true, slotCount: claimedIds.length })
   } catch (e) {
     console.error(e)
     return NextResponse.json({ error: 'SERVER_ERROR' }, { status: 500 })
@@ -126,13 +139,18 @@ export async function PATCH(req: NextRequest) {
     if (status === 'confirmed') {
       await sql`UPDATE slots SET status='booked' WHERE id=${b.slotId}`
     } else if (status === 'cancelled') {
-      await sql`UPDATE bookings SET status='cancelled' WHERE "bookingCode"=${b.bookingCode}`
-      await sql`
-        UPDATE slots SET status='available', "pendingExpiresAt"=null
-        WHERE id IN (
-          SELECT "slotId" FROM bookings WHERE "bookingCode"=${b.bookingCode}
-        )
-      `
+      if (b.groupId) {
+        // Cancel all slots in the booking group at once
+        await sql`UPDATE bookings SET status='cancelled' WHERE "groupId"=${b.groupId}`
+        await sql`
+          UPDATE slots SET status='available', "pendingExpiresAt"=null
+          WHERE id IN (SELECT "slotId" FROM bookings WHERE "groupId"=${b.groupId})
+        `
+      } else {
+        // Legacy: no groupId — cancel this booking only
+        await sql`UPDATE bookings SET status='cancelled' WHERE id=${b.id}`
+        await sql`UPDATE slots SET status='available', "pendingExpiresAt"=null WHERE id=${b.slotId}`
+      }
     }
     return NextResponse.json(b)
   } catch (e) {

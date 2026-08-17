@@ -34,12 +34,15 @@ export async function POST(req: NextRequest) {
       RETURNING id
     `
 
-    // If some slots were grabbed between check and update, rollback
+    // If some slots were grabbed between check and update, rollback ONLY what we locked
     if (updated.length !== slotIds.length) {
-      await sql`
-        UPDATE slots SET status = 'available', "pendingExpiresAt" = null
-        WHERE id = ANY(${slotIds})
-      `
+      const claimedIds = updated.map((r: any) => r.id)
+      if (claimedIds.length > 0) {
+        await sql`
+          UPDATE slots SET status = 'available', "pendingExpiresAt" = null
+          WHERE id = ANY(${claimedIds})
+        `
+      }
       return NextResponse.json({ error: 'SLOT_UNAVAILABLE' }, { status: 409 })
     }
 

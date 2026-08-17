@@ -92,7 +92,8 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
   const [selectedDate, setSelectedDate] = useState(dates[0].dateStr);
   const [selectedTimeFilter, setSelectedTimeFilter] = useState<TimeFilter>("evening");
 
-  // Load site settings from DB + re-fetch every 30s so changes from admin show up automatically
+  // Load site settings on mount; re-fetch whenever the tab becomes visible
+  // (visibilitychange instead of a fixed interval — avoids polling Neon while backgrounded)
   useEffect(() => {
     const load = () =>
       fetch("/api/settings")
@@ -122,10 +123,15 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
         })
         .catch(() => {});
 
-    load();                              // immediate on mount
-    const id = setInterval(load, 30000); // refresh every 30s
-    return () => clearInterval(id);
+    load(); // immediate on mount
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
+
 
   return (
     <TurfContext.Provider
