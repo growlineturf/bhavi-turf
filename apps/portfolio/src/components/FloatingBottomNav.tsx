@@ -10,7 +10,8 @@ export default function FloatingBottomNav() {
   const idx = dates.findIndex((d) => d.dateStr === selectedDate);
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-40 flex items-center justify-between px-4 py-3 bg-zinc-950/92 backdrop-blur-xl border-t border-zinc-900">
+    <div className="fixed bottom-0 inset-x-0 z-40 flex items-center justify-between px-4 bg-zinc-950/92 backdrop-blur-xl border-t border-zinc-900"
+      style={{ paddingTop: "12px", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
       {/* Prev */}
       <button
         onClick={() => idx > 0 && setSelectedDate(dates[idx - 1].dateStr)}

@@ -213,20 +213,22 @@ function BookingSheet({
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={step === "done" ? undefined : onClose} />
-      <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[#0f0f0f] border-t border-zinc-800 shadow-2xl overflow-y-auto overflow-x-hidden max-h-[92dvh]">
-        <div className="max-w-lg mx-auto px-5 pt-4 pb-10 space-y-4">
+      {/* Sheet — uses dvh so it doesn't overlap the iOS home indicator */}
+      <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[#0f0f0f] border-t border-zinc-800 shadow-2xl overflow-y-auto overflow-x-hidden"
+        style={{ maxHeight: "92dvh", paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}>
+        <div className="w-full max-w-lg mx-auto px-4 pt-4 space-y-4">
           <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-2" />
 
           {/* ── STEP 1: Summary ── */}
           {step === "info" && (
             <>
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
                   <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Selected Slot</p>
-                  <p className="text-xl font-black text-white leading-tight">{fmtFull(start)} – {fmtFull(end)}</p>
+                  <p className="text-lg font-black text-white leading-tight">{fmtFull(start)} – {fmtFull(end)}</p>
                   <p className="text-xs text-zinc-400 mt-0.5">{fmtDur(durMin)} · {sport}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Total</p>
                   <p className="text-2xl font-black text-white">₹{total}</p>
                 </div>
@@ -237,11 +239,11 @@ function BookingSheet({
                   copiedGpay ? "bg-emerald-600/20 border-emerald-600/50" : "bg-zinc-900 border-zinc-800"
                 }`}
               >
-                <div className="text-left">
+                <div className="text-left min-w-0">
                   <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Advance via GPay</p>
                   <p className="text-lg font-black text-emerald-400">₹{config.advanceAmount}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0 ml-2">
                   <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">
                     {copiedGpay ? "✓ Copied!" : "Tap to Copy"}
                   </p>
@@ -259,12 +261,12 @@ function BookingSheet({
 
           {/* ── STEP 2: Customer details form ── */}
           {step === "form" && (
-            <form onSubmit={submit} className="space-y-3">
+            <form onSubmit={submit} className="space-y-3 pb-6">
               <h3 className="text-sm font-black text-white">Your Details</h3>
               <input required placeholder="Full Name" value={name} onChange={e => setName(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-blue-500 focus:outline-none" />
-              <input required type="tel" placeholder="Phone Number" value={phone} onChange={e => setPhone(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-blue-500 focus:outline-none" />
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3.5 text-white placeholder-zinc-600 focus:border-blue-500 focus:outline-none" style={{ fontSize: "16px" }} />
+              <input required type="tel" inputMode="numeric" placeholder="Phone Number" value={phone} onChange={e => setPhone(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3.5 text-white placeholder-zinc-600 focus:border-blue-500 focus:outline-none" style={{ fontSize: "16px" }} />
               {error && <p className="text-red-400 text-xs text-center">{error}</p>}
               <button type="submit" disabled={loading}
                 className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white font-extrabold py-4 rounded-full text-sm transition">
@@ -276,50 +278,49 @@ function BookingSheet({
 
           {/* ── STEP 3: Confirmed — payment + WhatsApp ── */}
           {step === "done" && (
-            <div className="space-y-3 pb-2">
+            <div className="space-y-3 pb-4">
               {/* Header */}
               <div className="text-center pt-1">
                 <div className="mx-auto h-14 w-14 rounded-full bg-emerald-500/15 flex items-center justify-center text-3xl border border-emerald-500/30 mb-3">✅</div>
                 <p className="font-black text-white text-xl">Booking Confirmed!</p>
-                <p className="text-xs text-zinc-500 mt-1">Slot reserved · Pay advance below to lock it in</p>
+                <p className="text-xs text-zinc-500 mt-1">Pay ₹{config.advanceAmount} via GPay to lock your session</p>
               </div>
 
-
-
-              {/* Booking details */}
-              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl divide-y divide-zinc-800/70">
+              {/* Booking details — two-column with text wrapping */}
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
                 {[
                   ["Date",     fmtDate(date)],
                   ["Time",     `${fmtFull(start)} – ${fmtFull(end)}`],
-                  ["Sport",    `${sport === "Cricket" ? "🏏" : "⚽"} ${sport}`],
+                  ["Service",  `${sport === "Cricket" ? "🏏" : "⚽"} ${sport}`],
                   ["Duration", fmtDur(durMin)],
                   ["Name",     name],
                   ["Phone",    phone],
+                  ["Amount",   `₹${total}`],
                 ].map(([label, value]) => (
-                  <div key={String(label)} className="flex items-center justify-between px-4 py-2 gap-3">
-                    <span className="text-[11px] text-zinc-500 shrink-0">{label}</span>
-                    <span className="text-xs font-bold text-white text-right min-w-0 break-words">{value}</span>
+                  <div key={String(label)} className="flex items-start justify-between px-4 py-2.5 border-b border-zinc-800/70 last:border-0 gap-3">
+                    <span className="text-[11px] text-zinc-500 shrink-0 pt-0.5 w-16">{label}</span>
+                    <span className="text-xs font-bold text-white text-right min-w-0 break-words leading-snug flex-1">{value}</span>
                   </div>
                 ))}
               </div>
 
               {/* ⚡ Pay Advance box */}
               <div className="bg-amber-950/40 border border-amber-700/50 rounded-2xl p-4 space-y-3">
-                <p className="text-xs font-black text-amber-400">⚡ Pay Advance to Confirm Your Slot</p>
+                <p className="text-xs font-black text-amber-400">⚡ Pay ₹{config.advanceAmount} to Confirm</p>
 
-                {/* Advance amount + GPay number side by side */}
-                <div className="flex items-center justify-between">
+                {/* Amount and GPay number */}
+                <div className="flex items-end justify-between gap-2 flex-wrap">
                   <div>
-                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Advance Amount</p>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest">AMOUNT</p>
                     <p className="text-3xl font-black text-white">₹{config.advanceAmount}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">GPay / UPI</p>
-                    <p className="text-base font-black text-white font-mono">{config.gpayNumber}</p>
+                  <div className="text-right min-w-0">
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">GPAY / UPI</p>
+                    <p className="text-sm font-black text-white font-mono break-all">{config.gpayNumber}</p>
                   </div>
                 </div>
 
-                {/* GPay number — large copy button */}
+                {/* Large copy button */}
                 <button
                   onClick={() => copyText(config.gpayNumber)}
                   className={`w-full flex items-center justify-between rounded-xl px-4 py-3 border transition active:scale-95 ${
@@ -328,9 +329,9 @@ function BookingSheet({
                       : "bg-zinc-900 border-zinc-700"
                   }`}
                 >
-                  <span className="font-mono font-black text-white text-base tracking-wide truncate">{config.gpayNumber}</span>
-                  <span className={`text-sm font-bold px-3 py-1.5 rounded-lg transition ${copiedGpay ? "bg-emerald-600 text-white" : "bg-blue-600 text-white"}`}>
-                    {copiedGpay ? "✓ Copied!" : "📋 Copy"}
+                  <span className="font-mono font-black text-white text-sm tracking-wide min-w-0 mr-2 truncate">{config.gpayNumber}</span>
+                  <span className={`text-xs font-bold px-3 py-1.5 rounded-lg shrink-0 transition ${copiedGpay ? "bg-emerald-600 text-white" : "bg-blue-600 text-white"}`}>
+                    {copiedGpay ? "✓ Copied!" : "Copy"}
                   </span>
                 </button>
 

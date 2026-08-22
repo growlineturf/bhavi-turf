@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { TurfProvider } from "@/lib/turfStore";
 import Providers from "./providers";
@@ -96,6 +96,15 @@ export const metadata: Metadata = {
   creator: "BHAVI TURF",
   publisher: "BHAVI TURF",
   category: "Sports & Recreation",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#09090b",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
