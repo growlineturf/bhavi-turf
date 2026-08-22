@@ -1,7 +1,13 @@
 const { neon } = require('@neondatabase/serverless')
 const bcrypt = require('bcryptjs')
 
-const DATABASE_URL = "postgresql://neondb_owner:npg_sPD7w5lBqpZN@ep-patient-art-azlzvwog-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+// Load DATABASE_URL from .env.local if present (requires dotenv or manual export)
+const DATABASE_URL = process.env.DATABASE_URL
+if (!DATABASE_URL) {
+  console.error('❌ DATABASE_URL environment variable is not set.')
+  console.error('   Set it before running: $env:DATABASE_URL="postgresql://..."')
+  process.exit(1)
+}
 
 async function seedAdmin() {
   const sql = neon(DATABASE_URL)

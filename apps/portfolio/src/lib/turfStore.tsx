@@ -5,6 +5,12 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 /* ─── Types ───────────────────────────────────────────────── */
 export type TimeFilter = "twilight" | "morning" | "noon" | "evening";
 
+export interface GalleryImage {
+  url: string;
+  title: string;
+  tag: string;
+}
+
 export interface TurfConfig {
   turfName: string;
   city: string;
@@ -23,6 +29,8 @@ export interface TurfConfig {
   instagramUrl: string;
   primaryColor: string;
   sportsOffered: string;
+  galleryImages: GalleryImage[];
+  pwaName: string;
 }
 
 export interface DateOption {
@@ -32,12 +40,14 @@ export interface DateOption {
   isToday: boolean;
 }
 
+const BASE = "https://content3.jdmagicbox.com/v2/comp/neyveli/s1/9999p4142.4142.231228031543.d3s1/catalogue";
+
 /* ─── Defaults ────────────────────────────────────────────── */
 const DEFAULT_CONFIG: TurfConfig = {
-  turfName: "TURF ARENA",
-  city: "Chennai, Tamil Nadu",
-  heroTitle: "Welcome to TURF ARENA",
-  heroTagline: "Premium Turf Booking Experience",
+  turfName: "BHAVI TURF",
+  city: "Mannan Nagar, Neyveli",
+  heroTitle: "Welcome to BHAVI TURF",
+  heroTagline: "Premium Indoor Cricket Turf with Bowling Machine",
   heroBannerUrl:
     "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=1600&q=80",
   gpayNumber: "9876543210",
@@ -46,11 +56,19 @@ const DEFAULT_CONFIG: TurfConfig = {
   whatsappNumber: "919876543210",
   logoUrl: "",
   logoText: "",
-  openingHours: "5 AM – 11 PM",
+  openingHours: "6 AM – 11 PM",
   googleMapsUrl: "",
   instagramUrl: "",
   primaryColor: "#3b82f6",
-  sportsOffered: "Cricket, Football",
+  sportsOffered: "Cricket",
+  galleryImages: [
+    { url: `${BASE}/bhavi-indoor-turf-cricket-neyveli-sports-clubs-6rqslabxm8.jpg`, title: "BHAVI Indoor Turf — Main View", tag: "Indoor Turf" },
+    { url: `${BASE}/bhavi-indoor-turf-cricket-neyveli-sports-clubs-mfwsuoqrxn.jpg`, title: "Bowling Machine Practice Zone",  tag: "Bowling Machine" },
+    { url: `${BASE}/bhavi-indoor-turf-cricket-neyveli-sports-clubs-msz9rggy2g.jpg`, title: "Cricket Pitch Close-Up",          tag: "Pitch" },
+    { url: `${BASE}/bhavi-indoor-turf-cricket-neyveli-sports-clubs-cb038bja55.jpg`, title: "Net & Arena Setup",               tag: "Arena" },
+    { url: `${BASE}/bhavi-indoor-turf-cricket-neyveli-sports-clubs-kjs44i24ne.jpg`, title: "Full Ground Overview",            tag: "Ground" },
+  ],
+  pwaName: "BHAVI",
 };
 
 const DAY_NAMES  = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -119,6 +137,15 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
             instagramUrl:  s.instagramUrl  ?? prev.instagramUrl,
             primaryColor:  s.primaryColor  ?? prev.primaryColor,
             sportsOffered: s.sportsOffered ?? prev.sportsOffered,
+            galleryImages: (() => {
+              try {
+                const parsed = typeof s.galleryImages === 'string'
+                  ? JSON.parse(s.galleryImages)
+                  : s.galleryImages;
+                return Array.isArray(parsed) && parsed.length > 0 ? parsed : prev.galleryImages;
+              } catch { return prev.galleryImages; }
+            })(),
+            pwaName: s.pwaName ?? prev.pwaName,
           }));
         })
         .catch(() => {});

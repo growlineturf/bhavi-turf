@@ -3,39 +3,49 @@
 import { useState, useEffect } from 'react'
 import {
   Settings, Save, Loader2, Image, Trophy, Globe, CreditCard,
-  MapPin, Instagram, Clock, Palette, Eye, EyeOff, ExternalLink
+  MapPin, Instagram, Clock, Palette, Eye, EyeOff, ExternalLink,
+  Plus, Trash2, ChevronUp, ChevronDown, GalleryHorizontal,
 } from 'lucide-react'
+
+interface GalleryImage { url: string; title: string; tag: string }
 
 interface SettingsData {
   turfName: string
   city: string
   openingHours: string
   sportsOffered: string
-  // Hero
   heroTitle: string
   heroTagline: string
   heroBannerUrl: string
-  // Logo
   logoUrl: string
   logoText: string
-  // Payment
   whatsappNumber: string
   gpayNumber: string
   advanceAmount: number
-  // Social
   instagramUrl: string
   googleMapsUrl: string
-  // Theme
   primaryColor: string
+  galleryImages: GalleryImage[]
+  pwaName: string
 }
 
+const BASE = 'https://content3.jdmagicbox.com/v2/comp/neyveli/s1/9999p4142.4142.231228031543.d3s1/catalogue'
+
 const DEFAULTS: SettingsData = {
-  turfName: '', city: '', openingHours: '5 AM – 11 PM', sportsOffered: 'Cricket, Football',
+  turfName: '', city: '', openingHours: '6 AM – 11 PM', sportsOffered: 'Cricket',
   heroTitle: '', heroTagline: '', heroBannerUrl: '',
   logoUrl: '', logoText: '',
   whatsappNumber: '', gpayNumber: '', advanceAmount: 500,
   instagramUrl: '', googleMapsUrl: '',
   primaryColor: '#3b82f6',
+  pwaName: 'BHAVI',
+  galleryImages: [
+    { url: `${BASE}/bhavi-indoor-turf-cricket-neyveli-sports-clubs-6rqslabxm8.jpg`, title: 'BHAVI Indoor Turf — Main View', tag: 'Indoor Turf' },
+    { url: `${BASE}/bhavi-indoor-turf-cricket-neyveli-sports-clubs-mfwsuoqrxn.jpg`, title: 'Bowling Machine Practice Zone',  tag: 'Bowling Machine' },
+    { url: `${BASE}/bhavi-indoor-turf-cricket-neyveli-sports-clubs-msz9rggy2g.jpg`, title: 'Cricket Pitch Close-Up',          tag: 'Pitch' },
+    { url: `${BASE}/bhavi-indoor-turf-cricket-neyveli-sports-clubs-cb038bja55.jpg`, title: 'Net & Arena Setup',               tag: 'Arena' },
+    { url: `${BASE}/bhavi-indoor-turf-cricket-neyveli-sports-clubs-kjs44i24ne.jpg`, title: 'Full Ground Overview',            tag: 'Ground' },
+  ],
 }
 
 /* ─── helper to render an input field ─────────────────────── */
@@ -140,6 +150,7 @@ function Section({ icon: Icon, title, children }: {
 ═══════════════════════════════════════════════════════════════ */
 export default function SettingsPage() {
   const [form, setForm] = useState<SettingsData>(DEFAULTS)
+  const [newImg, setNewImg] = useState<GalleryImage>({ url: '', title: '', tag: '' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -148,7 +159,16 @@ export default function SettingsPage() {
   useEffect(() => {
     fetch('/api/settings')
       .then((r) => r.json())
-      .then((d) => { if (d) setForm((prev) => ({ ...prev, ...d })) })
+      .then((d) => {
+        if (d) {
+          let gallery = DEFAULTS.galleryImages
+          try {
+            const parsed = typeof d.galleryImages === 'string' ? JSON.parse(d.galleryImages) : d.galleryImages
+            if (Array.isArray(parsed) && parsed.length > 0) gallery = parsed
+          } catch { /* keep defaults */ }
+          setForm((prev) => ({ ...prev, ...d, galleryImages: gallery }))
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
@@ -161,10 +181,11 @@ export default function SettingsPage() {
     setSaving(true)
     setError('')
     try {
+      const payload = { ...form, galleryImages: JSON.stringify(form.galleryImages) }
       const res = await fetch('/api/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) throw new Error('Failed')
       setSaved(true)
@@ -174,6 +195,24 @@ export default function SettingsPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  // Gallery helpers
+  const addImage = () => {
+    if (!newImg.url.trim()) return
+    setForm(f => ({ ...f, galleryImages: [...f.galleryImages, { ...newImg }] }))
+    setNewImg({ url: '', title: '', tag: '' })
+  }
+  const removeImage = (i: number) =>
+    setForm(f => ({ ...f, galleryImages: f.galleryImages.filter((_, idx) => idx !== i) }))
+  const moveImage = (i: number, dir: -1 | 1) => {
+    setForm(f => {
+      const imgs = [...f.galleryImages]
+      const j = i + dir
+      if (j < 0 || j >= imgs.length) return f
+      ;[imgs[i], imgs[j]] = [imgs[j], imgs[i]]
+      return { ...f, galleryImages: imgs }
+    })
   }
 
   if (loading) {
@@ -207,13 +246,20 @@ export default function SettingsPage() {
         {/* ── 1. Brand Identity ────────────────────────────── */}
         <Section icon={Trophy} title="Brand Identity">
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Turf Name" value={form.turfName} onChange={set('turfName')} placeholder="Turf Arena" />
-            <Field label="City" value={form.city} onChange={set('city')} placeholder="Chennai, Tamil Nadu" />
+            <Field label="Turf Name" value={form.turfName} onChange={set('turfName')} placeholder="BHAVI TURF" />
+            <Field label="City" value={form.city} onChange={set('city')} placeholder="Neyveli, Tamil Nadu" />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Opening Hours" value={form.openingHours} onChange={set('openingHours')} placeholder="5 AM – 11 PM" />
-            <Field label="Sports Offered" value={form.sportsOffered} onChange={set('sportsOffered')} placeholder="Cricket, Football" />
+            <Field label="Opening Hours" value={form.openingHours} onChange={set('openingHours')} placeholder="6 AM – 11 PM" />
+            <Field label="Sports Offered" value={form.sportsOffered} onChange={set('sportsOffered')} placeholder="Cricket" />
           </div>
+          <Field
+            label="📱 App Home Screen Name (PWA)"
+            value={form.pwaName}
+            onChange={set('pwaName')}
+            placeholder="BHAVI"
+            hint="This is the name shown under the icon when customers install the app on Android / iPhone. Keep it short (under 12 characters)."
+          />
         </Section>
 
         {/* ── 2. Logo ──────────────────────────────────────── */}
@@ -334,6 +380,98 @@ export default function SettingsPage() {
           <p className="text-[10px] text-zinc-600">
             Sets the primary button/accent colour across the site. Default: #3b82f6 (blue)
           </p>
+        </Section>
+
+        {/* ── 7. Gallery Images ────────────────────────────── */}
+        <Section icon={GalleryHorizontal} title="Gallery Images">
+          <p className="text-[11px] text-zinc-500 -mt-2">These images appear on the public Gallery page. Add, remove or reorder them here.</p>
+
+          {/* Existing images list */}
+          <div className="space-y-2">
+            {form.galleryImages.map((img, i) => (
+              <div key={i} className="flex items-center gap-2 bg-zinc-800/50 border border-zinc-700 rounded-xl p-2">
+                {/* Thumbnail */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img.url} alt={img.title} className="h-12 w-16 object-cover rounded-lg shrink-0 bg-zinc-700" onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0.3' }} />
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <input
+                    type="text"
+                    value={img.title}
+                    onChange={e => setForm(f => { const imgs = [...f.galleryImages]; imgs[i] = { ...imgs[i], title: e.target.value }; return { ...f, galleryImages: imgs } })}
+                    placeholder="Photo title"
+                    className="w-full bg-transparent text-sm text-white placeholder-zinc-600 focus:outline-none font-semibold"
+                  />
+                  <input
+                    type="text"
+                    value={img.tag}
+                    onChange={e => setForm(f => { const imgs = [...f.galleryImages]; imgs[i] = { ...imgs[i], tag: e.target.value }; return { ...f, galleryImages: imgs } })}
+                    placeholder="Tag (e.g. Pitch)"
+                    className="w-full bg-transparent text-xs text-zinc-400 placeholder-zinc-600 focus:outline-none mt-0.5"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col gap-1 shrink-0">
+                  <button type="button" onClick={() => moveImage(i, -1)} disabled={i === 0}
+                    className="h-6 w-6 flex items-center justify-center rounded-lg bg-zinc-700 hover:bg-zinc-600 text-zinc-300 disabled:opacity-30 transition">
+                    <ChevronUp size={12} />
+                  </button>
+                  <button type="button" onClick={() => moveImage(i, 1)} disabled={i === form.galleryImages.length - 1}
+                    className="h-6 w-6 flex items-center justify-center rounded-lg bg-zinc-700 hover:bg-zinc-600 text-zinc-300 disabled:opacity-30 transition">
+                    <ChevronDown size={12} />
+                  </button>
+                </div>
+                <button type="button" onClick={() => removeImage(i)}
+                  className="h-8 w-8 flex items-center justify-center rounded-xl bg-zinc-700 hover:bg-red-900/50 hover:text-red-400 text-zinc-400 transition shrink-0">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+            {form.galleryImages.length === 0 && (
+              <p className="text-xs text-zinc-600 text-center py-4">No images yet — add one below.</p>
+            )}
+          </div>
+
+          {/* Add new image */}
+          <div className="border-t border-zinc-800 pt-4 space-y-2">
+            <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Add New Image</p>
+            <div className="flex items-center bg-zinc-800/60 border border-zinc-700/80 rounded-xl overflow-hidden focus-within:border-blue-500 transition">
+              <Image className="h-4 w-4 text-zinc-600 ml-3 shrink-0" />
+              <input
+                type="url"
+                value={newImg.url}
+                onChange={e => setNewImg(p => ({ ...p, url: e.target.value }))}
+                placeholder="Image URL (https://...)"
+                className="flex-1 bg-transparent px-3 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                value={newImg.title}
+                onChange={e => setNewImg(p => ({ ...p, title: e.target.value }))}
+                placeholder="Title (e.g. Main Court)"
+                className="bg-zinc-800/60 border border-zinc-700/80 rounded-xl px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 transition"
+              />
+              <input
+                type="text"
+                value={newImg.tag}
+                onChange={e => setNewImg(p => ({ ...p, tag: e.target.value }))}
+                placeholder="Tag (e.g. Pitch)"
+                className="bg-zinc-800/60 border border-zinc-700/80 rounded-xl px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 transition"
+              />
+            </div>
+            {newImg.url && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={newImg.url} alt="Preview" className="w-full h-32 object-cover rounded-xl border border-zinc-700 mt-1" onError={(e) => { (e.target as HTMLImageElement).style.display='none' }} />
+            )}
+            <button type="button" onClick={addImage} disabled={!newImg.url.trim()}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 text-white text-sm font-semibold transition">
+              <Plus size={15} /> Add to Gallery
+            </button>
+          </div>
         </Section>
 
         {/* Save */}

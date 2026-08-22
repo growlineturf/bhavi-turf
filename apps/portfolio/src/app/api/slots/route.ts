@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 
-const SPORTS = ['Cricket', 'Football']
+const SPORTS = ['Cricket']
 
 // Price per HOUR — slot price will be halved for 30-min slots
 const PRICE_BY_HOUR: Record<number, number> = {
@@ -12,7 +12,7 @@ const PRICE_BY_HOUR: Record<number, number> = {
   20: 800, 21: 800, 22: 800,
 }
 
-const EXPECTED_SLOTS = 18 * 2 * 2 // 18 hours × 2 sports × 2 sub-slots = 72
+const EXPECTED_SLOTS = 18 * 1 * 2 // 18 hours × 1 sport × 2 sub-slots = 36
 
 export async function GET(req: NextRequest) {
   const sql = neon(process.env.DATABASE_URL!)

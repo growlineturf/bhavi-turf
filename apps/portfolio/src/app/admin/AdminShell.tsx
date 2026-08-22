@@ -28,24 +28,65 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  // Fetch pending count on mount + whenever the tab becomes visible again
-  // (no fixed interval — avoids burning Neon compute when tab is backgrounded)
+  // Override PWA manifest + iOS title so "Add to Home Screen" installs as "BHAVI Admin"
+  useEffect(() => {
+    // Swap manifest link to admin manifest
+    let manifestLink = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null
+    if (!manifestLink) {
+      manifestLink = document.createElement('link')
+      manifestLink.rel = 'manifest'
+      document.head.appendChild(manifestLink)
+    }
+    const prevManifest = manifestLink.href
+    manifestLink.href = '/api/manifest/admin'
+
+    // Swap apple-mobile-web-app-title for iOS
+    let appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement | null
+    if (!appleTitle) {
+      appleTitle = document.createElement('meta')
+      appleTitle.name = 'apple-mobile-web-app-title'
+      document.head.appendChild(appleTitle)
+    }
+    const prevAppleTitle = appleTitle.content
+    appleTitle.content = 'BHAVI Admin'
+
+    return () => {
+      // Restore consumer values on unmount
+      if (manifestLink) manifestLink.href = prevManifest
+      if (appleTitle) appleTitle.content = prevAppleTitle
+    }
+  }, [])
+
+  // Fetch pending count on mount, tab-focus, route change, and after any booking action
   useEffect(() => {
     if (status !== 'authenticated') return
     const fetchPending = () =>
-      fetch('/api/bookings?status=pending_payment')
-        .then(r => r.json())
-        .then(d => setPendingCount(Array.isArray(d) ? d.length : 0))
-        .catch(() => {})
+      Promise.all([
+        fetch('/api/bookings?status=pending_payment').then(r => r.json()).catch(() => []),
+        fetch('/api/bookings/fiveover').then(r => r.json()).catch(() => []),
+      ]).then(([normal, fiveOver]) => {
+        const normalCount   = Array.isArray(normal)   ? normal.length   : 0
+        const fiveOverCount = Array.isArray(fiveOver)
+          ? fiveOver.filter((b: { status: string }) => b.status === 'pending_payment').length
+          : 0
+        setPendingCount(normalCount + fiveOverCount)
+      })
 
     fetchPending()
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') fetchPending()
     }
+    // Re-fetch whenever any booking is confirmed / rejected
+    const handleAction = () => fetchPending()
+
     document.addEventListener('visibilitychange', handleVisibility)
-    return () => document.removeEventListener('visibilitychange', handleVisibility)
-  }, [status])
+    window.addEventListener('bookingActioned', handleAction)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('bookingActioned', handleAction)
+    }
+  }, [status, pathname])   // pathname: re-fetch on every tab switch
 
   if (status === 'loading') {
     return (
@@ -76,7 +117,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               <Trophy size={16} className="text-white" />
             </div>
             <div>
-              <div className="font-black text-sm text-white">Turf Arena</div>
+              <div className="font-black text-sm text-white">BHAVI TURF</div>
               <div className="text-xs text-zinc-500">Admin</div>
             </div>
           </div>

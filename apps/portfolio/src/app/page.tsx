@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import InstallPWABanner from "@/components/InstallPWABanner";
 
 import { useTurf } from "@/lib/turfStore";
 import {
@@ -26,6 +27,8 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-blue-600 selection:text-white">
       <Navbar />
+      {/* Floating install prompt — shows automatically on Android & iOS */}
+      <InstallPWABanner appName={config.pwaName || "BHAVI"} />
 
       {/* Hero Section */}
       <section className="relative w-full overflow-hidden min-h-[85vh] flex items-center justify-center">
@@ -39,7 +42,7 @@ export default function HomePage() {
         <div className="relative z-10 mx-auto max-w-5xl px-4 py-20 text-center space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-950/50 px-4 py-1.5 text-xs font-extrabold text-blue-400 backdrop-blur-md">
             <Sparkles className="h-3.5 w-3.5" />
-            <span>FIFA-Standard Turf • {config.city}</span>
+            <span>Indoor Cricket Turf • {config.city}</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-white max-w-4xl mx-auto leading-[1.1]">
@@ -75,7 +78,7 @@ export default function HomePage() {
           <span className="text-xs font-bold text-blue-500 uppercase tracking-widest">Unrivaled Pitch Quality</span>
           <h2 className="text-3xl sm:text-4xl font-black text-white">Why Choose {config.turfName}?</h2>
           <p className="text-sm text-zinc-400 max-w-xl mx-auto">
-            Engineered for high-octane box cricket & 5-a-side football matches.
+            Purpose-built indoor cricket turf with bowling machine — perfect for practice & matches.
           </p>
         </div>
 
@@ -83,18 +86,18 @@ export default function HomePage() {
           {[
             {
               icon: Zap,
-              title: "High-Lux Flood Lights",
-              desc: "Night matches with zero shadow delay and professional arena lighting.",
+              title: "Bowling Machine",
+              desc: "Adjustable speed bowling machine for batting practice at all skill levels.",
             },
             {
               icon: Shield,
-              title: "Quality FIFA Pitch",
-              desc: "Imported 50mm turf grass with shock-absorbing rubber infill.",
+              title: "Premium Indoor Pitch",
+              desc: "High-quality artificial turf surface designed for indoor cricket play.",
             },
             {
               icon: Smile,
               title: "Friendly Environment",
-              desc: "Covered dugout seating, pristine changing rooms & snack bar.",
+              desc: "Covered indoor arena, clean facilities & comfortable playing space.",
             },
             {
               icon: CalendarCheck,
@@ -121,7 +124,7 @@ export default function HomePage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
           <div>
             <span className="text-xs font-bold text-blue-500 uppercase tracking-widest">Facility Tour</span>
-            <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">Our Premium Facility</h2>
+            <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">Our Indoor Turf Facility</h2>
           </div>
           <Link
             href="/gallery"
@@ -134,16 +137,19 @@ export default function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             {
-              title: "FIFA Grade Pitch",
-              img: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80",
+              title: "Indoor Cricket Turf",
+              sub: "Premium artificial pitch surface",
+              img: "https://content3.jdmagicbox.com/v2/comp/neyveli/s1/9999p4142.4142.231228031543.d3s1/catalogue/bhavi-indoor-turf-cricket-neyveli-sports-clubs-6rqslabxm8.jpg",
             },
             {
-              title: "24/7 Floodlight Arena",
-              img: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80",
+              title: "Bowling Machine Zone",
+              sub: "Practice with adjustable speed machine",
+              img: "https://content3.jdmagicbox.com/v2/comp/neyveli/s1/9999p4142.4142.231228031543.d3s1/catalogue/bhavi-indoor-turf-cricket-neyveli-sports-clubs-mfwsuoqrxn.jpg",
             },
             {
-              title: "Box Cricket Net Setup",
-              img: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80",
+              title: "Full Ground View",
+              sub: "Spacious indoor arena — Mannan Nagar, Neyveli",
+              img: "https://content3.jdmagicbox.com/v2/comp/neyveli/s1/9999p4142.4142.231228031543.d3s1/catalogue/bhavi-indoor-turf-cricket-neyveli-sports-clubs-kjs44i24ne.jpg",
             },
           ].map((g, i) => (
             <div
@@ -158,7 +164,7 @@ export default function HomePage() {
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent"></div>
               <div className="absolute bottom-4 left-4 right-4">
                 <span className="text-sm font-bold text-white block">{g.title}</span>
-                <span className="text-[10px] text-zinc-400 font-medium">Tamil Nadu Turf Venue</span>
+                <span className="text-[10px] text-zinc-400 font-medium">{g.sub}</span>
               </div>
             </div>
           ))}
@@ -172,10 +178,10 @@ export default function HomePage() {
             <Trophy className="h-4 w-4" /> Tournament & League Organizer
           </div>
           <h2 className="text-3xl sm:text-5xl font-black text-white max-w-3xl mx-auto">
-            Host Your Next Box Cricket & Football Tournament
+            Host Your Next Indoor Cricket Tournament
           </h2>
           <p className="text-sm text-zinc-300 max-w-xl mx-auto">
-            Corporate leagues, weekend knockout trophies, and birthday matches. Reserve full-day ground access with custom floodlight packages.
+            Corporate leagues, weekend knockout trophies, and birthday matches — all indoors with our bowling machine and premium pitch. Reserve full-day ground access today.
           </p>
           <div className="pt-2">
             <a
@@ -219,13 +225,13 @@ export default function HomePage() {
             {
               name: "Vijay Anand",
               sport: "Box Cricket Captain",
-              text: "Best turf in Tamil Nadu! High quality floodlights make evening cricket incredible. Booking slot taking less than 1 minute via GPay.",
+              text: "Best indoor turf in Tamil Nadu! The bowling machine is top-notch and the pitch quality is excellent. Booking slot takes less than 1 minute via GPay.",
               rating: 5,
             },
             {
               name: "Dinesh Kumar",
-              sport: "5-a-Side Footballer",
-              text: "Grass bounce and cushioning is top-tier. No knee strain after 2 hours of continuous football. Highly recommended!",
+              sport: "Indoor Turf Player",
+              text: "The indoor turf with the bowling machine is a game changer! Perfect for practice sessions. The machine speed settings are great for all skill levels. Absolutely love it!",
               rating: 5,
             },
             {

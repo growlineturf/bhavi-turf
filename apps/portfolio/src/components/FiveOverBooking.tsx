@@ -1,0 +1,316 @@
+"use client";
+
+import React, { useState } from "react";
+import { Clock, Zap } from "lucide-react";
+
+interface BookingConfig {
+  gpayNumber: string;
+  advanceAmount: number;
+  whatsappNumber: string;
+  turfName: string;
+}
+
+interface Props {
+  date: string;
+  config: BookingConfig;
+}
+
+const PRICE   = 100;
+const SERVICE = "5 Over – 30 Balls";
+
+/* Simple time validator: accepts "6 PM", "6:30 PM", "18:00", "18:30" */
+function isValidTime(t: string): boolean {
+  return /^\d{1,2}(:\d{2})?\s*(AM|PM|am|pm)?$/.test(t.trim());
+}
+
+function fmtDate(d: string) {
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const [y, m, day] = d.split("-").map(Number);
+  return `${day} ${months[m - 1]} ${y}`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MAIN CARD — shown between date strip & slot grid
+══════════════════════════════════════════════════════════════ */
+export default function FiveOverBooking({ date, config }: Props) {
+  const [time, setTime]           = useState("");
+  const [timeErr, setTimeErr]     = useState("");
+  const [showSheet, setShowSheet] = useState(false);
+
+  const handleBook = () => {
+    if (!time.trim()) { setTimeErr("Please enter a time — e.g. 6:30 PM"); return; }
+    if (!isValidTime(time)) { setTimeErr("Invalid format. Example: 6:30 PM or 18:30"); return; }
+    setTimeErr("");
+    setShowSheet(true);
+  };
+
+  return (
+    <>
+      {/* ── Card ── */}
+      <div className="border-b border-zinc-900 px-4 py-3 bg-amber-950/10">
+        <div className="max-w-7xl mx-auto">
+          <p className="text-[9px] font-extrabold uppercase tracking-widest text-amber-400 mb-2">
+            ⚡ Quick Practice Session
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Service badge */}
+            <div className="flex items-center gap-2 bg-zinc-900 border border-amber-700/40 rounded-2xl px-4 py-2.5">
+              <Zap className="h-4 w-4 text-amber-400 shrink-0" />
+              <span className="text-sm font-bold text-white">{SERVICE}</span>
+              <span className="text-sm font-black text-amber-400 ml-1">₹{PRICE}</span>
+            </div>
+
+            {/* Time input */}
+            <div className="flex items-center gap-2 flex-1 min-w-[190px]">
+              <Clock className="h-4 w-4 text-zinc-500 shrink-0" />
+              <span className="text-xs font-bold text-zinc-400 shrink-0">Time:</span>
+              <input
+                value={time}
+                onChange={e => { setTime(e.target.value); setTimeErr(""); }}
+                placeholder="e.g. 6:30 PM"
+                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-white placeholder-zinc-600 focus:border-amber-500 focus:outline-none transition"
+              />
+            </div>
+
+            {/* Book button */}
+            <button
+              onClick={handleBook}
+              className="bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-black font-extrabold px-5 py-2.5 rounded-full text-xs transition shrink-0"
+            >
+              Book 5 Over →
+            </button>
+          </div>
+
+          {timeErr && (
+            <p className="text-red-400 text-[11px] mt-1.5 pl-1">{timeErr}</p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Bottom sheet ── */}
+      {showSheet && (
+        <FiveOverSheet
+          date={date}
+          time={time}
+          config={config}
+          onClose={() => setShowSheet(false)}
+        />
+      )}
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BOOKING SHEET — mirrors the existing BookingSheet style
+══════════════════════════════════════════════════════════════ */
+function FiveOverSheet({
+  date, time, config, onClose,
+}: {
+  date: string;
+  time: string;
+  config: BookingConfig;
+  onClose: () => void;
+}) {
+  const [step, setStep]         = useState<"info" | "form" | "done">("info");
+  const [name, setName]         = useState("");
+  const [phone, setPhone]       = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+  const [copied, setCopied]     = useState(false);
+
+  const copyText = (t: string) => {
+    navigator.clipboard.writeText(t).catch(() => {});
+    setCopied(true); setTimeout(() => setCopied(false), 2000);
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setLoading(true); setError("");
+    try {
+      const res = await fetch("/api/bookings/fiveover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date, time,
+          customerName: name,
+          customerPhone: phone,
+          bookingType: "5_over",
+          serviceName: SERVICE,
+          price: PRICE,
+          gpayNumber: config.gpayNumber,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error ?? "Booking failed. Please try again.");
+      }
+      setStep("done");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Booking failed. Try again.");
+    } finally { setLoading(false); }
+  };
+
+  const waText = encodeURIComponent(
+    `Hi ${config.turfName}! 🏏\n\n` +
+    `I've booked *${SERVICE}*.\n\n` +
+    `📅 *Date:* ${fmtDate(date)}\n` +
+    `⏰ *Time:* ${time}\n` +
+    `👤 *Name:* ${name}\n` +
+    `📞 *Phone:* ${phone}\n\n` +
+    `💰 *Paid:* ₹${PRICE} via GPay to ${config.gpayNumber}\n\n` +
+    ``
+  );
+  const waUrl = `https://wa.me/91${config.whatsappNumber.replace(/\D/g,"").slice(-10)}?text=${waText}`;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+        onClick={step === "done" ? undefined : onClose}
+      />
+
+      {/* Sheet */}
+      <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[#0f0f0f] border-t border-zinc-800 shadow-2xl overflow-y-auto overflow-x-hidden max-h-[92dvh]">
+        <div className="max-w-lg mx-auto px-5 pt-4 pb-10 space-y-4">
+          <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-2" />
+
+          {/* ── STEP 1: Info ── */}
+          {step === "info" && (
+            <>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Service</p>
+                  <p className="text-xl font-black text-white leading-tight">{SERVICE}</p>
+                  <p className="text-xs text-zinc-400 mt-0.5">⏰ {time} · {fmtDate(date)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Total</p>
+                  <p className="text-2xl font-black text-white">₹{PRICE}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => copyText(config.gpayNumber)}
+                className={`w-full flex items-center justify-between rounded-2xl px-4 py-3 border transition active:scale-95 ${
+                  copied ? "bg-emerald-600/20 border-emerald-600/50" : "bg-zinc-900 border-zinc-800"
+                }`}
+              >
+                <div className="text-left">
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Pay via GPay</p>
+                  <p className="text-lg font-black text-emerald-400">₹{PRICE}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">
+                    {copied ? "✓ Copied!" : "Tap to Copy"}
+                  </p>
+                  <p className={`text-sm font-black font-mono ${copied ? "text-emerald-400" : "text-white"}`}>
+                    {config.gpayNumber}
+                  </p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setStep("form")}
+                className="w-full bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-black font-extrabold py-4 rounded-full text-sm transition"
+              >
+                Continue to Book →
+              </button>
+            </>
+          )}
+
+          {/* ── STEP 2: Form ── */}
+          {step === "form" && (
+            <form onSubmit={submit} className="space-y-3">
+              <h3 className="text-sm font-black text-white">Your Details</h3>
+              <input
+                required placeholder="Full Name" value={name}
+                onChange={e => setName(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-amber-500 focus:outline-none"
+              />
+              <input
+                required type="tel" placeholder="Phone Number" value={phone}
+                onChange={e => setPhone(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-amber-500 focus:outline-none"
+              />
+              {error && <p className="text-red-400 text-xs text-center">{error}</p>}
+              <button
+                type="submit" disabled={loading}
+                className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-black font-extrabold py-4 rounded-full text-sm transition"
+              >
+                {loading ? "Booking…" : "Confirm Booking"}
+              </button>
+              <button type="button" onClick={() => setStep("info")}
+                className="w-full text-xs text-zinc-600 hover:text-zinc-400 py-1 transition">
+                ← Back
+              </button>
+            </form>
+          )}
+
+          {/* ── STEP 3: Done ── */}
+          {step === "done" && (
+            <div className="space-y-3 pb-2">
+              <div className="text-center pt-1">
+                <div className="mx-auto h-14 w-14 rounded-full bg-emerald-500/15 flex items-center justify-center text-3xl border border-emerald-500/30 mb-3">✅</div>
+                <p className="font-black text-white text-xl">Booking Confirmed!</p>
+                <p className="text-xs text-zinc-500 mt-1">Pay ₹{PRICE} via GPay to lock your session</p>
+              </div>
+
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl divide-y divide-zinc-800/70">
+                {([
+                  ["Service", SERVICE],
+                  ["Date",    fmtDate(date)],
+                  ["Time",    time],
+                  ["Name",    name],
+                  ["Phone",   phone],
+                  ["Amount",  `₹${PRICE}`],
+                ] as [string, string][]).map(([label, value]) => (
+                  <div key={label} className="flex items-center justify-between px-4 py-2 gap-3">
+                    <span className="text-[11px] text-zinc-500 shrink-0">{label}</span>
+                    <span className="text-xs font-bold text-white text-right">{value}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pay box */}
+              <div className="bg-amber-950/40 border border-amber-700/50 rounded-2xl p-4 space-y-3">
+                <p className="text-xs font-black text-amber-400">⚡ Pay ₹{PRICE} to Confirm</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Amount</p>
+                    <p className="text-3xl font-black text-white">₹{PRICE}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">GPay / UPI</p>
+                    <p className="text-base font-black text-white font-mono">{config.gpayNumber}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => copyText(config.gpayNumber)}
+                  className={`w-full flex items-center justify-between rounded-xl px-4 py-3 border transition active:scale-95 ${
+                    copied ? "bg-emerald-600/20 border-emerald-600/50" : "bg-zinc-900 border-zinc-700"
+                  }`}
+                >
+                  <span className="text-sm font-black text-white font-mono">{config.gpayNumber}</span>
+                  <span className={`text-xs font-bold ${copied ? "text-emerald-400" : "text-blue-400"}`}>
+                    {copied ? "✓ Copied!" : "Copy"}
+                  </span>
+                </button>
+              </div>
+
+              <a href={waUrl} target="_blank" rel="noreferrer"
+                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-4 rounded-full text-sm transition">
+                📲 Confirm on WhatsApp
+              </a>
+
+              <button onClick={onClose}
+                className="w-full text-xs text-zinc-600 hover:text-zinc-400 py-2 transition">
+                Close
+              </button>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </>
+  );
+}

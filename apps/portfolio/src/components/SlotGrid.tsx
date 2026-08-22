@@ -41,7 +41,7 @@ const PERIOD_HOURS: Record<Period, number[]> = {
   evening:  [16, 17, 18, 19, 20, 21, 22],
 };
 
-const SPORTS: Sport[] = ["Cricket", "Football"];
+const SPORTS: Sport[] = ["Cricket"];
 
 const HATCH = `repeating-linear-gradient(-45deg,#161616,#161616 4px,#1f1f1f 4px,#1f1f1f 9px)`;
 
@@ -206,7 +206,7 @@ function BookingSheet({
     `👤 *Name:* ${name}\n` +
     `📞 *Phone:* ${phone}\n\n` +
     `💰 *Advance Paid:* ₹${config.advanceAmount} via GPay to ${config.gpayNumber}\n\n` +
-    `Please find my payment screenshot below 👇`
+    ``
   );
   const waUrl = `https://wa.me/91${config.whatsappNumber.replace(/\D/g, "").slice(-10)}?text=${waText}`;
 
@@ -231,16 +231,25 @@ function BookingSheet({
                   <p className="text-2xl font-black text-white">₹{total}</p>
                 </div>
               </div>
-              <div className="flex items-center justify-between bg-zinc-900 rounded-2xl px-4 py-3 border border-zinc-800">
-                <div>
+              <button
+                onClick={() => copyText(config.gpayNumber)}
+                className={`w-full flex items-center justify-between rounded-2xl px-4 py-3 border transition active:scale-95 ${
+                  copiedGpay ? "bg-emerald-600/20 border-emerald-600/50" : "bg-zinc-900 border-zinc-800"
+                }`}
+              >
+                <div className="text-left">
                   <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Advance via GPay</p>
                   <p className="text-lg font-black text-emerald-400">₹{config.advanceAmount}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest">GPay Number</p>
-                  <p className="text-sm font-black text-white font-mono">{config.gpayNumber}</p>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">
+                    {copiedGpay ? "✓ Copied!" : "Tap to Copy"}
+                  </p>
+                  <p className={`text-sm font-black font-mono ${copiedGpay ? "text-emerald-400" : "text-white"}`}>
+                    {config.gpayNumber}
+                  </p>
                 </div>
-              </div>
+              </button>
               <button onClick={() => setStep("form")}
                 className="w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-extrabold py-4 rounded-full text-sm transition">
                 Continue to Book →
@@ -326,7 +335,7 @@ function BookingSheet({
                 </button>
 
                 <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  Open GPay → <strong className="text-white">Pay ₹{config.advanceAmount}</strong> to the number above → Take screenshot → Send on WhatsApp ↓
+                  Open GPay → <strong className="text-white">Pay ₹{config.advanceAmount}</strong> to the number above → Confirm on WhatsApp ↓
                 </p>
               </div>
 
@@ -337,11 +346,11 @@ function BookingSheet({
                 rel="noreferrer"
                 className="flex items-center justify-center gap-2 w-full bg-emerald-600 active:bg-emerald-700 text-white font-extrabold py-4 rounded-2xl text-sm"
               >
-                <span className="text-xl">📱</span>
-                <span>Open WhatsApp &amp; Send Screenshot</span>
+                <span className="text-xl">📲</span>
+                <span>Confirm on WhatsApp</span>
               </a>
               <p className="text-center text-[10px] text-zinc-600">
-                WhatsApp opens with booking details pre-filled — just attach your GPay screenshot and tap Send
+                Tap to confirm your booking on WhatsApp
               </p>
 
               <button onClick={onClose} className="w-full text-xs text-zinc-500 py-2">Close</button>

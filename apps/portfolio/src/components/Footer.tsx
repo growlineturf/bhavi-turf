@@ -23,7 +23,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              FIFA-standard multi-sport turf pitch in {config.city}. Experience premium floodlight cricket & football with effortless instant online slot booking.
+              Premium indoor cricket turf with bowling machine in {config.city}. Experience top-quality pitch sessions with effortless instant online slot booking.
             </p>
             <div className="flex items-center gap-3 pt-1">
               <a
@@ -53,7 +53,8 @@ export default function Footer() {
               <li><Link href="/book" className="hover:text-white transition font-medium text-blue-400">Book Slots Online</Link></li>
               <li><Link href="/rules" className="hover:text-white transition">Ground Guidelines</Link></li>
               <li><Link href="/gallery" className="hover:text-white transition">Pitch Photo Gallery</Link></li>
-              <li><Link href="/contact" className="hover:text-white transition">Location & Contact</Link></li>
+              <li><Link href="/contact" className="hover:text-white transition">Location &amp; Contact</Link></li>
+              <li><Link href="/terms" className="hover:text-white transition text-zinc-500">Terms &amp; Conditions</Link></li>
             </ul>
           </div>
 
@@ -77,7 +78,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2.5">
                 <Clock className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span>Open 24/7 (Floodlight Equipped)</span>
+                <span>Open {config.openingHours} — All Days</span>
               </li>
             </ul>
           </div>
@@ -108,7 +109,13 @@ export default function Footer() {
 
         <div className="border-t border-zinc-900 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-400">
           <p>© {new Date().getFullYear()} {config.turfName} ({config.city}). All rights reserved.</p>
-          <p className="text-[11px]">Powered by Next.js 16 + Neon Database</p>
+          <div className="flex items-center gap-4">
+            <Link href="/terms" className="hover:text-white transition flex items-center gap-1">
+              <ShieldCheck className="h-3 w-3" /> Terms &amp; Conditions
+            </Link>
+            <span className="text-zinc-700">|</span>
+            <p className="text-[11px]">Powered by Next.js 16</p>
+          </div>
         </div>
       </div>
     </footer>

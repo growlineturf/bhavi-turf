@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SlotGrid from "@/components/SlotGrid";
+import FiveOverBooking from "@/components/FiveOverBooking";
+import InstallPWABanner from "@/components/InstallPWABanner";
 import { useTurf } from "@/lib/turfStore";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -52,6 +54,8 @@ export default function BookingPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans">
       <Navbar />
+      {/* Floating install prompt — shows automatically on Android & iOS */}
+      <InstallPWABanner appName={config.pwaName || "BHAVI"} />
 
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="border-b border-zinc-900 py-5 px-4 text-center">
@@ -107,6 +111,17 @@ export default function BookingPage() {
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
+
+      {/* ── 5-OVER QUICK BOOKING ─────────────────────────────── */}
+      <FiveOverBooking
+        date={selectedDate}
+        config={{
+          gpayNumber:     config.gpayNumber,
+          advanceAmount:  config.advanceAmount,
+          whatsappNumber: config.whatsappNumber,
+          turfName:       config.turfName,
+        }}
+      />
 
       {/* ── TIME PERIOD FILTER ──────────────────────────────── */}
       <div className="flex items-center justify-center gap-2 px-4 py-3 border-b border-zinc-900">

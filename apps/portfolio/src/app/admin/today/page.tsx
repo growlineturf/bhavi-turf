@@ -1,12 +1,20 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, RefreshCw, Phone, XCircle, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Calendar, RefreshCw, Phone, XCircle, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight, Zap } from 'lucide-react'
 
 interface Booking {
   id: string; customerName: string; customerPhone: string
   totalAmount: number; advanceAmount: number; status: string
   slot: { startTime: string; endTime: string; sport: string; date: string }
+}
+
+interface FiveOverBooking {
+  id: string; bookingCode: string
+  customerName: string; customerPhone: string
+  bookingDate: string; bookingTime: string
+  serviceName: string; price: number; status: string
+  createdAt: string
 }
 
 /* Merge consecutive slots from the same customer into one group */
@@ -59,12 +67,15 @@ function getDates() {
 
 export default function TodayPage() {
   const DATES = getDates()
-  const [selDate, setSelDate]         = useState(DATES[0].dateStr)
-  const [bookings, setBookings]       = useState<Booking[]>([])
-  const [loading, setLoading]         = useState(true)
-  const [cancelling, setCancelling]   = useState<string | null>(null)
-  const [confirming, setConfirming]   = useState<string | null>(null)
-  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const [selDate, setSelDate]               = useState(DATES[0].dateStr)
+  const [bookings, setBookings]             = useState<Booking[]>([])
+  const [fiveOverBookings, setFiveOver]     = useState<FiveOverBooking[]>([])
+  const [loading, setLoading]               = useState(true)
+  const [cancelling, setCancelling]         = useState<string | null>(null)
+  const [confirming, setConfirming]         = useState<string | null>(null)
+  const [confirmingId, setConfirmingId]     = useState<string | null>(null)
+  const [cancellingFive, setCancellingFive] = useState<string | null>(null)
+  const [confirmingFive, setConfirmingFive] = useState<string | null>(null)
 
   const dateInfo = DATES.find(d => d.dateStr === selDate) ?? DATES[0]
   const dateIdx  = DATES.findIndex(d => d.dateStr === selDate)
@@ -72,15 +83,17 @@ export default function TodayPage() {
   const load = useCallback(async (date: string) => {
     setLoading(true)
     try {
-      // Fetch all statuses so we see pending + confirmed
-      const [confRes, pendRes] = await Promise.all([
+      const [confRes, pendRes, fiveRes] = await Promise.all([
         fetch('/api/bookings?status=confirmed'),
         fetch('/api/bookings?status=pending_payment'),
+        fetch('/api/bookings/fiveover'),
       ])
       const conf: Booking[] = confRes.ok ? await confRes.json() : []
       const pend: Booking[] = pendRes.ok ? await pendRes.json() : []
+      const five: FiveOverBooking[] = fiveRes.ok ? await fiveRes.json() : []
       const all = [...conf, ...pend]
       setBookings(all.filter(b => b.slot?.date?.startsWith(date)))
+      setFiveOver(five.filter(b => b.bookingDate === date))
     } finally { setLoading(false) }
   }, [])
 
@@ -112,6 +125,19 @@ export default function TodayPage() {
       })
       setBookings(p => p.map(b => b.id === id ? { ...b, status: 'confirmed' } : b))
     } finally { setConfirmingId(null) }
+  }
+
+  const cancelFiveOver = async (id: string) => {
+    setCancellingFive(id)
+    try {
+      await fetch('/api/bookings/fiveover', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: 'cancelled' }),
+      })
+      setFiveOver(p => p.filter(b => b.id !== id))
+      window.dispatchEvent(new Event('bookingActioned'))
+    } finally { setCancellingFive(null); setConfirmingFive(null) }
   }
 
   const fmt = (t: string) => {
@@ -234,6 +260,89 @@ export default function TodayPage() {
           </div>
         </div>
       )}
+
+      {/* ── 5-Over Bookings Section ──────────────────────────────── */}
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center gap-2">
+          <Zap size={14} className="text-amber-400" />
+          <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">
+            5 Over – 30 Balls Bookings ({fiveOverBookings.length})
+          </p>
+        </div>
+
+        {fiveOverBookings.length === 0 ? (
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-5 text-center">
+            <p className="text-zinc-600 text-sm">No 5-over bookings for {dateInfo.label === 'Today' ? 'today' : dateInfo.sub}</p>
+          </div>
+        ) : (
+          fiveOverBookings.map(b => (
+            <div key={b.id} className="bg-zinc-900 border border-amber-800/30 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Zap size={13} className="text-amber-400" />
+                  <span className="text-xs font-bold text-amber-400">{b.serviceName}</span>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                  b.status === 'confirmed' ? 'text-emerald-400 bg-emerald-900/30' : 'text-amber-400 bg-amber-900/30'
+                }`}>
+                  {b.status === 'confirmed' ? '✓ Confirmed' : '⏳ Pending'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-0.5">Customer</p>
+                  <p className="font-bold text-white text-sm">{b.customerName}</p>
+                  <a href={`tel:${b.customerPhone}`} className="flex items-center gap-1 text-blue-400 text-xs hover:underline mt-0.5">
+                    <Phone size={10} /> {b.customerPhone}
+                  </a>
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-0.5">Time</p>
+                  <p className="font-bold text-white text-sm">{b.bookingTime}</p>
+                  <p className="text-zinc-400 text-xs">30 Balls</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-0.5">Amount</p>
+                  <p className="font-bold text-green-400 text-sm">₹{b.price}</p>
+                  <p className="text-zinc-500 text-xs">Full pay</p>
+                </div>
+              </div>
+
+              {/* Cancel with confirmation */}
+              {confirmingFive === b.id ? (
+                <div className="bg-red-950/40 border border-red-800/50 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-red-400">
+                    <AlertTriangle size={14} />
+                    <span className="text-sm font-bold">Cancel this booking?</span>
+                  </div>
+                  <p className="text-xs text-zinc-400 leading-relaxed">
+                    This will cancel <strong className="text-white">{b.customerName}</strong>&apos;s
+                    5-over booking at <strong className="text-white">{b.bookingTime}</strong>.
+                    Revenue will be reduced by <strong className="text-green-400">₹{b.price}</strong>.
+                  </p>
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={() => cancelFiveOver(b.id)} disabled={cancellingFive === b.id}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white text-sm font-bold transition">
+                      <XCircle size={14} />
+                      {cancellingFive === b.id ? 'Cancelling...' : 'Yes, Cancel'}
+                    </button>
+                    <button onClick={() => setConfirmingFive(null)} disabled={cancellingFive === b.id}
+                      className="flex-1 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-semibold transition">
+                      Keep Booking
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmingFive(b.id)}
+                  className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-zinc-700 hover:border-red-700 hover:bg-red-950/30 hover:text-red-400 text-zinc-500 text-xs font-semibold transition">
+                  <XCircle size={13} /> Cancel Booking
+                </button>
+              )}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   )
 }

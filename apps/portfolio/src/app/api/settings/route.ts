@@ -13,7 +13,9 @@ async function ensureColumns(sql: any) {
   await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "googleMapsUrl" TEXT NOT NULL DEFAULT ''`
   await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "instagramUrl"  TEXT NOT NULL DEFAULT ''`
   await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "primaryColor"  TEXT NOT NULL DEFAULT '#3b82f6'`
-  await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "sportsOffered" TEXT NOT NULL DEFAULT 'Cricket, Football'`
+  await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "sportsOffered" TEXT NOT NULL DEFAULT 'Cricket'`
+  await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "galleryImages" TEXT NOT NULL DEFAULT '[]'`
+  await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "pwaName"       TEXT NOT NULL DEFAULT 'BHAVI'`
 }
 
 export async function GET() {
@@ -39,11 +41,11 @@ export async function PATCH(req: NextRequest) {
         id, "turfName", city, "whatsappNumber", "gpayNumber", "advanceAmount",
         "heroTitle", "heroTagline", "heroBannerUrl",
         "logoUrl", "logoText", "openingHours", "googleMapsUrl", "instagramUrl",
-        "primaryColor", "sportsOffered", "updatedAt"
+        "primaryColor", "sportsOffered", "galleryImages", "pwaName", "updatedAt"
       )
       VALUES (
         'singleton',
-        ${b.turfName       ?? 'Turf Arena'},
+        ${b.turfName       ?? 'BHAVI TURF'},
         ${b.city           ?? ''},
         ${b.whatsappNumber ?? ''},
         ${b.gpayNumber     ?? ''},
@@ -53,11 +55,13 @@ export async function PATCH(req: NextRequest) {
         ${b.heroBannerUrl  ?? ''},
         ${b.logoUrl        ?? ''},
         ${b.logoText       ?? ''},
-        ${b.openingHours   ?? '5 AM – 11 PM'},
+        ${b.openingHours   ?? '6 AM – 11 PM'},
         ${b.googleMapsUrl  ?? ''},
         ${b.instagramUrl   ?? ''},
         ${b.primaryColor   ?? '#3b82f6'},
-        ${b.sportsOffered  ?? 'Cricket, Football'},
+        ${b.sportsOffered  ?? 'Cricket'},
+        ${b.galleryImages  ?? '[]'},
+        ${b.pwaName        ?? 'BHAVI'},
         now()
       )
       ON CONFLICT (id) DO UPDATE SET
@@ -76,6 +80,8 @@ export async function PATCH(req: NextRequest) {
         "instagramUrl"   = EXCLUDED."instagramUrl",
         "primaryColor"   = EXCLUDED."primaryColor",
         "sportsOffered"  = EXCLUDED."sportsOffered",
+        "galleryImages"  = EXCLUDED."galleryImages",
+        "pwaName"        = EXCLUDED."pwaName",
         "updatedAt"      = now()
       RETURNING *
     `

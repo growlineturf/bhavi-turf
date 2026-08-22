@@ -7,7 +7,7 @@ import { Trophy, Lock, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function AdminLoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState('admin@turfarena.in')
+  const [email, setEmail] = useState('bhavi@admin')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
             <Trophy size={28} className="text-white" />
           </div>
         </div>
-        <h1 className="text-center text-white font-black text-xl mb-1">Turf Arena</h1>
+        <h1 className="text-center text-white font-black text-xl mb-1">BHAVI TURF</h1>
         <p className="text-center text-zinc-500 text-sm mb-7">Admin Panel — Sign in to continue</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
