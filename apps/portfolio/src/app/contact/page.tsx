@@ -73,28 +73,50 @@ export default function ContactPage() {
                       rel="noreferrer"
                       className="text-emerald-400 font-semibold hover:underline"
                     >
-                      +91 {config.whatsappNumber}
+                      +91 {config.whatsappNumber.slice(-10)}
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-600/20 text-amber-400 shrink-0">
+                    <Mail className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-white block text-sm">Email / Inquiries</span>
+                    <a
+                      href={`mailto:${config.email || "bhaviturf@gmail.com"}`}
+                      className="text-amber-400 font-semibold hover:underline"
+                    >
+                      {config.email || "bhaviturf@gmail.com"}
                     </a>
                   </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
                 <a
                   href={`tel:${config.gpayNumber}`}
-                  className="btn-pill flex items-center justify-center gap-2 flex-1 bg-blue-600 py-3 text-xs font-extrabold text-white shadow-lg hover:bg-blue-500 transition"
+                  className="btn-pill flex items-center justify-center gap-1.5 bg-blue-600 py-3 text-xs font-extrabold text-white shadow-lg hover:bg-blue-500 transition"
                 >
-                  <Phone className="h-4 w-4" /> Click to Call
+                  <Phone className="h-3.5 w-3.5" /> Call
                 </a>
 
                 <a
                   href={`https://wa.me/${config.whatsappNumber}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="btn-pill flex items-center justify-center gap-2 flex-1 bg-emerald-600 py-3 text-xs font-extrabold text-white shadow-lg hover:bg-emerald-500 transition"
+                  className="btn-pill flex items-center justify-center gap-1.5 bg-emerald-600 py-3 text-xs font-extrabold text-white shadow-lg hover:bg-emerald-500 transition"
                 >
-                  <MessageSquare className="h-4 w-4" /> WhatsApp Chat
+                  <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
+                </a>
+
+                <a
+                  href={`mailto:${config.email || "bhaviturf@gmail.com"}`}
+                  className="btn-pill flex items-center justify-center gap-1.5 bg-zinc-800 border border-zinc-700 py-3 text-xs font-extrabold text-white hover:bg-zinc-700 transition"
+                >
+                  <Mail className="h-3.5 w-3.5" /> Email
                 </a>
               </div>
             </div>
@@ -103,7 +125,7 @@ export default function ContactPage() {
             <div className="rounded-3xl border border-zinc-800 bg-zinc-900 overflow-hidden h-64 shadow-xl">
               <iframe
                 title="Ground Location Map"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3886.85217435133!2d80.2085!3d13.0645!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTPCsDAzJzUyLjIiTiA4MMKwMTInMzAuNiJF!5e0!3m2!1sen!2sin!4v1620000000000!5m2!1sen!2sin"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3907.0372346747285!2d79.474416!3d11.5556!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTHCsDMzJzIwLjIiTiA3OcKwMjgnMjcuOSJF!5e0!3m2!1sen!2sin!4v1620000000000!5m2!1sen!2sin"
                 width="100%"
                 height="100%"
                 style={{ border: 0, filter: "invert(90%) hue-rotate(180deg)" }}

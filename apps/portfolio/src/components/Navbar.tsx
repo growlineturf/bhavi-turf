@@ -24,19 +24,20 @@ export default function Navbar() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          {/* Logo mark: custom image or default icon */}
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform overflow-hidden shrink-0">
-            {config.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={config.logoUrl}
-                alt={config.turfName}
-                className="h-full w-full object-cover"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-              />
-            ) : (
-              <Trophy className="h-5 w-5" />
-            )}
+          {/* Logo mark: custom image or default logo */}
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-white shadow-lg shadow-blue-500/10 group-hover:scale-105 transition-transform overflow-hidden shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={config.logoUrl || "/logo.png"}
+              alt={config.turfName}
+              className="h-full w-full object-contain p-0.5"
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                if (img.src !== window.location.origin + "/logo.png") {
+                  img.src = "/logo.png";
+                }
+              }}
+            />
           </div>
           <div>
             <span className="text-lg font-extrabold tracking-tight text-white block leading-none">

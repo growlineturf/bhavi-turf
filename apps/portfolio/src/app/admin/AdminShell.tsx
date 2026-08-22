@@ -113,8 +113,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       {!isMobile && (
         <aside className="w-56 flex-shrink-0 bg-zinc-900 border-r border-zinc-800 flex flex-col p-4 gap-1">
           <div className="flex items-center gap-3 px-2 py-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
-              <Trophy size={16} className="text-white" />
+            <div className="w-9 h-9 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="BHAVI TURF" className="h-full w-full object-contain p-0.5" />
             </div>
             <div>
               <div className="font-black text-sm text-white">BHAVI TURF</div>

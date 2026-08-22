@@ -229,10 +229,16 @@ export default function TermsPage() {
           <div className="space-y-1.5 text-sm">
             <p className="text-white font-bold">{config.turfName}</p>
             <p className="text-zinc-400">📍 Main Road, {config.city}</p>
-            <a href={`https://wa.me/${config.whatsappNumber}`}
-              className="flex items-center gap-2 text-blue-400 hover:underline">
-              📱 WhatsApp: +91 {config.gpayNumber}
-            </a>
+            <div className="flex flex-wrap gap-4 pt-1">
+              <a href={`https://wa.me/${config.whatsappNumber}`}
+                className="flex items-center gap-2 text-blue-400 hover:underline">
+                📱 WhatsApp: +91 {config.whatsappNumber.slice(-10)}
+              </a>
+              <a href={`mailto:${config.email || "bhaviturf@gmail.com"}`}
+                className="flex items-center gap-2 text-blue-400 hover:underline">
+                ✉️ Email: {config.email || "bhaviturf@gmail.com"}
+              </a>
+            </div>
           </div>
         </div>
 

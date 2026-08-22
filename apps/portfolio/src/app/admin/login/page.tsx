@@ -38,8 +38,9 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-8">
         {/* Logo */}
         <div className="flex justify-center mb-5">
-          <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center">
-            <Trophy size={28} className="text-white" />
+          <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-700 flex items-center justify-center overflow-hidden p-1 shadow-lg shadow-blue-500/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="BHAVI TURF" className="h-full w-full object-contain" />
           </div>
         </div>
         <h1 className="text-center text-white font-black text-xl mb-1">BHAVI TURF</h1>

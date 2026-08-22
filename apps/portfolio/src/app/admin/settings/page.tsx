@@ -27,15 +27,17 @@ interface SettingsData {
   primaryColor: string
   galleryImages: GalleryImage[]
   pwaName: string
+  email: string
 }
 
 const BASE = 'https://content3.jdmagicbox.com/v2/comp/neyveli/s1/9999p4142.4142.231228031543.d3s1/catalogue'
 
 const DEFAULTS: SettingsData = {
-  turfName: '', city: '', openingHours: '6 AM – 11 PM', sportsOffered: 'Cricket',
+  turfName: 'BHAVI TURF', city: 'Mannan Nagar, Neyveli', openingHours: '6 AM – 11 PM', sportsOffered: 'Cricket',
   heroTitle: '', heroTagline: '', heroBannerUrl: '',
-  logoUrl: '', logoText: '',
+  logoUrl: '', logoText: 'BHAVI TURF',
   whatsappNumber: '', gpayNumber: '', advanceAmount: 500,
+  email: 'bhaviturf@gmail.com',
   instagramUrl: '', googleMapsUrl: '',
   primaryColor: '#3b82f6',
   pwaName: 'BHAVI',
@@ -188,6 +190,8 @@ export default function SettingsPage() {
         body: JSON.stringify(payload),
       })
       if (!res.ok) throw new Error('Failed')
+      // Dispatch event so all components and tabs instantly update
+      window.dispatchEvent(new Event('settingsUpdated'))
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch {
@@ -264,19 +268,41 @@ export default function SettingsPage() {
 
         {/* ── 2. Logo ──────────────────────────────────────── */}
         <Section icon={Image} title="Logo">
+          <div className="flex items-center gap-4 bg-zinc-800/40 border border-zinc-800 rounded-xl p-3">
+            <div className="h-14 w-14 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center overflow-hidden shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={form.logoUrl || '/logo.png'}
+                alt="Logo preview"
+                className="h-full w-full object-contain p-1"
+                onError={(e) => {
+                  const img = e.target as HTMLImageElement;
+                  if (img.src !== window.location.origin + "/logo.png") {
+                    img.src = "/logo.png";
+                  }
+                }}
+              />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white">Current Active Logo</p>
+              <p className="text-[11px] text-zinc-400">
+                {form.logoUrl ? 'Using custom image URL below' : 'Using default BHAVI TURF shield logo (/logo.png)'}
+              </p>
+            </div>
+          </div>
           <ImageUrlField
-            label="Logo Image URL"
+            label="Custom Logo Image URL (Optional)"
             value={form.logoUrl}
             onChange={set('logoUrl')}
             placeholder="https://your-cdn.com/logo.png"
-            hint="Recommended: transparent PNG, square (e.g. 200×200). Leave empty to use the default icon."
+            hint="Leave empty to use the default BHAVI TURF shield logo."
           />
           <Field
-            label="Logo Text (shown if no image URL)"
+            label="Logo Text (shown beside logo)"
             value={form.logoText}
             onChange={set('logoText')}
-            placeholder="TURF ARENA"
-            hint="Shown as text logo fallback. Leave empty to use turfName."
+            placeholder="BHAVI TURF"
+            hint="Shown as text logo in navigation. Leave empty to use Turf Name."
           />
         </Section>
 
@@ -293,18 +319,18 @@ export default function SettingsPage() {
             label="Hero Title"
             value={form.heroTitle}
             onChange={set('heroTitle')}
-            placeholder="Book Your Slot"
+            placeholder="Welcome to BHAVI TURF"
           />
           <Field
             label="Hero Tagline"
             value={form.heroTagline}
             onChange={set('heroTagline')}
-            placeholder="Premium turf experience in Chennai"
+            placeholder="Premium Indoor Cricket Turf with Bowling Machine"
           />
         </Section>
 
-        {/* ── 4. Payment ───────────────────────────────────── */}
-        <Section icon={CreditCard} title="Payment & Booking">
+        {/* ── 4. Payment & Contact ─────────────────────────── */}
+        <Section icon={CreditCard} title="Payment & Contact Details">
           <div className="grid grid-cols-2 gap-3">
             <Field
               label="WhatsApp Number"
@@ -320,6 +346,14 @@ export default function SettingsPage() {
               placeholder="9876543210"
             />
           </div>
+          <Field
+            label="📧 Support Email / Gmail Address"
+            value={form.email}
+            onChange={set('email')}
+            type="email"
+            placeholder="bhaviturf@gmail.com"
+            hint="Displayed in footer, contact page, and terms & conditions"
+          />
           <Field
             label="Advance Amount (₹)"
             value={form.advanceAmount}

@@ -63,8 +63,9 @@ export default function InstallPWABanner({ appName = 'BHAVI' }: { appName?: stri
                       gap-3 rounded-2xl bg-zinc-900 border border-zinc-700 px-4 py-3 shadow-2xl
                       animate-in slide-in-from-bottom-4 duration-300">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
-            <span className="text-white text-lg font-black">B</span>
+          <div className="h-10 w-10 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt={appName} className="h-full w-full object-contain p-0.5" />
           </div>
           <div>
             <p className="text-white font-bold text-sm">{appName}</p>
@@ -89,8 +90,9 @@ export default function InstallPWABanner({ appName = 'BHAVI' }: { appName?: stri
     <div className="fixed bottom-4 left-4 right-4 z-[9999] rounded-2xl bg-zinc-900 border border-zinc-700 p-4 shadow-2xl animate-in slide-in-from-bottom-4 duration-300">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
-            <span className="text-white text-lg font-black">B</span>
+          <div className="h-10 w-10 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt={appName} className="h-full w-full object-contain p-0.5" />
           </div>
           <div>
             <p className="text-white font-bold text-sm">{appName}</p>

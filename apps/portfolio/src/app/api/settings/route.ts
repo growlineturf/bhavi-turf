@@ -16,6 +16,7 @@ async function ensureColumns(sql: any) {
   await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "sportsOffered" TEXT NOT NULL DEFAULT 'Cricket'`
   await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "galleryImages" TEXT NOT NULL DEFAULT '[]'`
   await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "pwaName"       TEXT NOT NULL DEFAULT 'BHAVI'`
+  await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "email"         TEXT NOT NULL DEFAULT 'bhaviturf@gmail.com'`
 }
 
 export async function GET() {
@@ -41,7 +42,7 @@ export async function PATCH(req: NextRequest) {
         id, "turfName", city, "whatsappNumber", "gpayNumber", "advanceAmount",
         "heroTitle", "heroTagline", "heroBannerUrl",
         "logoUrl", "logoText", "openingHours", "googleMapsUrl", "instagramUrl",
-        "primaryColor", "sportsOffered", "galleryImages", "pwaName", "updatedAt"
+        "primaryColor", "sportsOffered", "galleryImages", "pwaName", "email", "updatedAt"
       )
       VALUES (
         'singleton',
@@ -62,6 +63,7 @@ export async function PATCH(req: NextRequest) {
         ${b.sportsOffered  ?? 'Cricket'},
         ${b.galleryImages  ?? '[]'},
         ${b.pwaName        ?? 'BHAVI'},
+        ${b.email          ?? 'bhaviturf@gmail.com'},
         now()
       )
       ON CONFLICT (id) DO UPDATE SET
@@ -82,6 +84,7 @@ export async function PATCH(req: NextRequest) {
         "sportsOffered"  = EXCLUDED."sportsOffered",
         "galleryImages"  = EXCLUDED."galleryImages",
         "pwaName"        = EXCLUDED."pwaName",
+        "email"          = EXCLUDED."email",
         "updatedAt"      = now()
       RETURNING *
     `

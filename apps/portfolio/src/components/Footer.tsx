@@ -15,8 +15,19 @@ export default function Footer() {
           {/* Col 1: Brand */}
           <div className="space-y-4 md:col-span-1">
             <Link href="/" className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white">
-                <Trophy className="h-4 w-4" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-white overflow-hidden shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={config.logoUrl || "/logo.png"}
+                  alt={config.turfName}
+                  className="h-full w-full object-contain p-0.5"
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    if (img.src !== window.location.origin + "/logo.png") {
+                      img.src = "/logo.png";
+                    }
+                  }}
+                />
               </div>
               <span className="text-lg font-black tracking-tight text-white">
                 {config.turfName}
@@ -41,6 +52,13 @@ export default function Footer() {
                 title="Call Support"
               >
                 <Phone className="h-4 w-4" />
+              </a>
+              <a
+                href={`mailto:${config.email || "bhaviturf@gmail.com"}`}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 border border-zinc-800 text-amber-400 hover:border-amber-500/50 transition"
+                title="Email Support"
+              >
+                <Mail className="h-4 w-4" />
               </a>
             </div>
           </div>
@@ -74,7 +92,9 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 text-blue-500 shrink-0" />
-                <span>support@{config.turfName.toLowerCase().replace(/\s+/g, "")}.com</span>
+                <a href={`mailto:${config.email || "bhaviturf@gmail.com"}`} className="hover:text-white transition">
+                  {config.email || "bhaviturf@gmail.com"}
+                </a>
               </li>
               <li className="flex items-center gap-2.5">
                 <Clock className="h-4 w-4 text-emerald-400 shrink-0" />

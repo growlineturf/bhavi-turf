@@ -21,6 +21,7 @@ export interface TurfConfig {
   upiId: string;
   advanceAmount: number;
   whatsappNumber: string;
+  email: string;
   // New branding fields
   logoUrl: string;
   logoText: string;
@@ -54,8 +55,9 @@ const DEFAULT_CONFIG: TurfConfig = {
   upiId: "9876543210@gpay",
   advanceAmount: 500,
   whatsappNumber: "919876543210",
-  logoUrl: "",
-  logoText: "",
+  email: "bhaviturf@gmail.com",
+  logoUrl: "/logo.png",
+  logoText: "BHAVI TURF",
   openingHours: "6 AM – 11 PM",
   googleMapsUrl: "",
   instagramUrl: "",
@@ -110,8 +112,7 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
   const [selectedDate, setSelectedDate] = useState(dates[0].dateStr);
   const [selectedTimeFilter, setSelectedTimeFilter] = useState<TimeFilter>("evening");
 
-  // Load site settings on mount; re-fetch whenever the tab becomes visible
-  // (visibilitychange instead of a fixed interval — avoids polling Neon while backgrounded)
+  // Load site settings on mount; re-fetch on tab visibility or settingsUpdated event
   useEffect(() => {
     const load = () =>
       fetch("/api/settings")
@@ -120,23 +121,25 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
           if (!s) return;
           setConfig((prev) => ({
             ...prev,
-            turfName:      s.turfName      ?? prev.turfName,
-            city:          s.city          ?? prev.city,
-            gpayNumber:    s.gpayNumber    ?? prev.gpayNumber,
+            turfName:      s.turfName      || prev.turfName,
+            city:          s.city          || prev.city,
+            gpayNumber:    s.gpayNumber    || prev.gpayNumber,
+            upiId:         s.gpayNumber ? `${s.gpayNumber}@gpay` : prev.upiId,
             advanceAmount: s.advanceAmount != null ? Number(s.advanceAmount) : prev.advanceAmount,
             whatsappNumber: s.whatsappNumber
               ? `91${s.whatsappNumber.replace(/\D/g, "").slice(-10)}`
               : prev.whatsappNumber,
+            email:         s.email         || prev.email,
             heroTitle:     s.heroTitle     ?? prev.heroTitle,
             heroTagline:   s.heroTagline   ?? prev.heroTagline,
             heroBannerUrl: s.heroBannerUrl || prev.heroBannerUrl,
-            logoUrl:       s.logoUrl       ?? prev.logoUrl,
+            logoUrl:       s.logoUrl       || "/logo.png",
             logoText:      s.logoText      ?? prev.logoText,
-            openingHours:  s.openingHours  ?? prev.openingHours,
+            openingHours:  s.openingHours  || prev.openingHours,
             googleMapsUrl: s.googleMapsUrl ?? prev.googleMapsUrl,
             instagramUrl:  s.instagramUrl  ?? prev.instagramUrl,
-            primaryColor:  s.primaryColor  ?? prev.primaryColor,
-            sportsOffered: s.sportsOffered ?? prev.sportsOffered,
+            primaryColor:  s.primaryColor  || prev.primaryColor,
+            sportsOffered: s.sportsOffered || prev.sportsOffered,
             galleryImages: (() => {
               try {
                 const parsed = typeof s.galleryImages === 'string'
@@ -145,7 +148,7 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
                 return Array.isArray(parsed) && parsed.length > 0 ? parsed : prev.galleryImages;
               } catch { return prev.galleryImages; }
             })(),
-            pwaName: s.pwaName ?? prev.pwaName,
+            pwaName: s.pwaName || prev.pwaName,
           }));
         })
         .catch(() => {});
@@ -155,8 +158,16 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") load();
     };
+    const handleSettingsUpdated = () => {
+      load();
+    };
+
     document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("settingsUpdated", handleSettingsUpdated);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("settingsUpdated", handleSettingsUpdated);
+    };
   }, []);
 
 
