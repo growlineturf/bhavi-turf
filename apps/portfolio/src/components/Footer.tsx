@@ -134,7 +134,7 @@ export default function Footer() {
               <ShieldCheck className="h-3 w-3" /> Terms &amp; Conditions
             </Link>
             <span className="text-zinc-700">|</span>
-            <p className="text-[11px]">Powered by Next.js 16</p>
+            <p className="text-[11px]">Powered by <span className="font-bold text-white tracking-wide">GROWLINE</span></p>
           </div>
         </div>
       </div>

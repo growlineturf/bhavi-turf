@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import {
   Settings, Save, Loader2, Image, Trophy, Globe, CreditCard,
-  MapPin, Instagram, Clock, Palette, Eye, EyeOff,
+  MapPin, Palette,
   Plus, Trash2, ChevronUp, ChevronDown, GalleryHorizontal,
 } from 'lucide-react'
 
@@ -79,7 +79,7 @@ function Field({
   )
 }
 
-/* ─── Image upload + URL field ─────────────────────────────── */
+/* ─── Image upload only field ───────────────────────────────── */
 function ImageUploadField({
   label, value, onChange, hint, accept = 'image/*',
 }: {
@@ -88,7 +88,6 @@ function ImageUploadField({
 }) {
   const [uploading, setUploading] = useState(false)
   const [uploadErr, setUploadErr] = useState('')
-  const [preview, setPreview] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = async (file: File) => {
@@ -114,8 +113,6 @@ function ImageUploadField({
     if (file) handleFile(file)
   }
 
-  const currentImg = value
-
   return (
     <div className="space-y-2">
       <label className="block text-[11px] font-bold text-zinc-400 uppercase tracking-widest">
@@ -123,12 +120,19 @@ function ImageUploadField({
       </label>
 
       {/* Current image preview */}
-      {currentImg && (
-        <div className="relative rounded-xl overflow-hidden border border-zinc-700 bg-zinc-900" style={{ height: 120 }}>
+      {value && (
+        <div className="relative rounded-xl overflow-hidden border border-zinc-700 bg-zinc-900" style={{ height: 140 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={currentImg} alt="Current" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2">
-            <span className="text-[10px] text-zinc-300 font-medium">Current image</span>
+          <img src={value} alt="Current" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end justify-between p-3">
+            <span className="text-[11px] text-zinc-300 font-semibold">✓ Image uploaded</span>
+            <button
+              type="button"
+              onClick={() => onChange('')}
+              className="text-[11px] font-bold text-red-400 hover:text-red-300 bg-black/50 px-2 py-1 rounded-lg transition"
+            >
+              Remove
+            </button>
           </div>
         </div>
       )}
@@ -137,7 +141,7 @@ function ImageUploadField({
       <div
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
-        className="border-2 border-dashed border-zinc-700 hover:border-blue-500/60 rounded-xl p-4 text-center cursor-pointer transition group"
+        className="border-2 border-dashed border-zinc-700 hover:border-blue-500/60 rounded-xl p-5 text-center cursor-pointer transition group"
         onClick={() => inputRef.current?.click()}
       >
         <input
@@ -154,50 +158,15 @@ function ImageUploadField({
           </div>
         ) : (
           <>
-            <div className="text-2xl mb-1">📤</div>
-            <p className="text-xs font-semibold text-zinc-300 group-hover:text-white transition">
-              Click or drag & drop to upload
+            <div className="text-3xl mb-2">📤</div>
+            <p className="text-sm font-semibold text-zinc-300 group-hover:text-white transition">
+              {value ? 'Click to replace image' : 'Click or drag & drop to upload'}
             </p>
-            <p className="text-[10px] text-zinc-600 mt-0.5">Any format · Any size</p>
+            <p className="text-[10px] text-zinc-600 mt-1">Any format · Any size</p>
           </>
         )}
       </div>
       {uploadErr && <p className="text-red-400 text-[11px]">{uploadErr}</p>}
-
-      {/* OR paste URL fallback */}
-      <div className="flex items-center gap-2">
-        <div className="h-px flex-1 bg-zinc-800" />
-        <span className="text-[10px] text-zinc-600 font-medium">or paste URL</span>
-        <div className="h-px flex-1 bg-zinc-800" />
-      </div>
-      <div className="flex items-center gap-2">
-        <div className="flex-1 flex items-center bg-zinc-800/60 border border-zinc-700/80 rounded-xl overflow-hidden focus-within:border-blue-500 transition">
-          <Image className="h-4 w-4 text-zinc-600 ml-3 shrink-0" />
-          <input
-            type="url"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="https://..."
-            className="flex-1 bg-transparent px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none"
-          />
-          {value && (
-            <button type="button" onClick={() => setPreview(p => !p)} className="px-3 text-zinc-500 hover:text-zinc-300 transition" title="Preview">
-              {preview ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-            </button>
-          )}
-        </div>
-        {value && (
-          <button type="button" onClick={() => onChange('')} className="h-9 w-9 flex items-center justify-center rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-500 hover:text-red-400 transition shrink-0" title="Clear">
-            ✕
-          </button>
-        )}
-      </div>
-      {preview && value && (
-        <div className="rounded-xl overflow-hidden border border-zinc-700" style={{ height: 100 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="URL Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-        </div>
-      )}
       {hint && <p className="text-[10px] text-zinc-600">{hint}</p>}
     </div>
   )
@@ -362,7 +331,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <ImageUploadField
-            label="Logo Image (Click to upload or paste URL)"
+            label="Logo Image"
             value={form.logoUrl}
             onChange={set('logoUrl')}
             hint="Leave empty to use the default BHAVI TURF shield logo."
@@ -379,7 +348,7 @@ export default function SettingsPage() {
         {/* ── 3. Hero Section ──────────────────────────────── */}
         <Section icon={Globe} title="Hero / Home Banner">
           <ImageUploadField
-            label="Hero Banner Image (Click to upload or paste URL)"
+            label="Hero Banner Image"
             value={form.heroBannerUrl}
             onChange={set('heroBannerUrl')}
             hint="Use a high-res landscape photo. Recommended: 1600x900 or wider."
