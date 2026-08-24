@@ -107,7 +107,19 @@ export const viewport: Viewport = {
   themeColor: "#09090b",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+/* ── Server-side settings fetch — eliminates flash of default hero ── */
+async function fetchInitialSettings() {
+  try {
+    const { neon } = await import('@neondatabase/serverless')
+    const sql = neon(process.env.DATABASE_URL!)
+    const rows = await sql`SELECT * FROM settings WHERE id='singleton' LIMIT 1`
+    return rows[0] ?? null
+  } catch { return null }
+}
+
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const initialSettings = await fetchInitialSettings()
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SportsActivityLocation",
@@ -207,7 +219,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body className="bg-zinc-950 text-white min-h-screen antialiased">
         <Providers>
-          <TurfProvider>{children}</TurfProvider>
+          <TurfProvider initialSettings={initialSettings}>{children}</TurfProvider>
         </Providers>
       </body>
     </html>

@@ -106,70 +106,80 @@ interface TurfContextType {
 
 const TurfContext = createContext<TurfContextType | undefined>(undefined);
 
-export function TurfProvider({ children }: { children: React.ReactNode }) {
-  const dates = generateDates();
-  const [config, setConfig] = useState<TurfConfig>(DEFAULT_CONFIG);
-  const [selectedDate, setSelectedDate] = useState(dates[0].dateStr);
-  const [selectedTimeFilter, setSelectedTimeFilter] = useState<TimeFilter>("evening");
+/* ── Build config from raw DB row ─────────────────────────── */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildConfig(s: any, prev: TurfConfig): TurfConfig {
+  if (!s) return prev
+  return {
+    ...prev,
+    turfName:      s.turfName      || prev.turfName,
+    city:          s.city          || prev.city,
+    gpayNumber:    s.gpayNumber    || prev.gpayNumber,
+    upiId:         s.gpayNumber ? `${s.gpayNumber}@gpay` : prev.upiId,
+    advanceAmount: s.advanceAmount != null ? Number(s.advanceAmount) : prev.advanceAmount,
+    whatsappNumber: s.whatsappNumber
+      ? `91${s.whatsappNumber.replace(/\D/g, "").slice(-10)}`
+      : prev.whatsappNumber,
+    email:         s.email         || prev.email,
+    heroTitle:     s.heroTitle     ?? prev.heroTitle,
+    heroTagline:   s.heroTagline   ?? prev.heroTagline,
+    heroBannerUrl: s.heroBannerUrl || prev.heroBannerUrl,
+    logoUrl:       s.logoUrl       || "/logo.png",
+    logoText:      s.logoText      ?? prev.logoText,
+    openingHours:  s.openingHours  || prev.openingHours,
+    googleMapsUrl: s.googleMapsUrl ?? prev.googleMapsUrl,
+    instagramUrl:  s.instagramUrl  ?? prev.instagramUrl,
+    primaryColor:  s.primaryColor  || prev.primaryColor,
+    sportsOffered: s.sportsOffered || prev.sportsOffered,
+    galleryImages: (() => {
+      try {
+        const parsed = typeof s.galleryImages === 'string'
+          ? JSON.parse(s.galleryImages)
+          : s.galleryImages;
+        return Array.isArray(parsed) && parsed.length > 0 ? parsed : prev.galleryImages;
+      } catch { return prev.galleryImages; }
+    })(),
+    pwaName: s.pwaName || prev.pwaName,
+  }
+}
 
-  // Load site settings on mount; re-fetch on tab visibility or settingsUpdated event
+export function TurfProvider({
+  children,
+  initialSettings,
+}: {
+  children: React.ReactNode
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  initialSettings?: any
+}) {
+  const dates = generateDates()
+  // Start with real settings from server — zero flash
+  const [config, setConfig] = useState<TurfConfig>(() => buildConfig(initialSettings, DEFAULT_CONFIG))
+  const [selectedDate, setSelectedDate] = useState(dates[0].dateStr)
+  const [selectedTimeFilter, setSelectedTimeFilter] = useState<TimeFilter>("evening")
+
+  // Re-fetch on tab visibility or settingsUpdated event (for live admin updates)
   useEffect(() => {
     const load = () =>
       fetch("/api/settings")
         .then((r) => r.json())
         .then((s) => {
-          if (!s) return;
-          setConfig((prev) => ({
-            ...prev,
-            turfName:      s.turfName      || prev.turfName,
-            city:          s.city          || prev.city,
-            gpayNumber:    s.gpayNumber    || prev.gpayNumber,
-            upiId:         s.gpayNumber ? `${s.gpayNumber}@gpay` : prev.upiId,
-            advanceAmount: s.advanceAmount != null ? Number(s.advanceAmount) : prev.advanceAmount,
-            whatsappNumber: s.whatsappNumber
-              ? `91${s.whatsappNumber.replace(/\D/g, "").slice(-10)}`
-              : prev.whatsappNumber,
-            email:         s.email         || prev.email,
-            heroTitle:     s.heroTitle     ?? prev.heroTitle,
-            heroTagline:   s.heroTagline   ?? prev.heroTagline,
-            heroBannerUrl: s.heroBannerUrl || prev.heroBannerUrl,
-            logoUrl:       s.logoUrl       || "/logo.png",
-            logoText:      s.logoText      ?? prev.logoText,
-            openingHours:  s.openingHours  || prev.openingHours,
-            googleMapsUrl: s.googleMapsUrl ?? prev.googleMapsUrl,
-            instagramUrl:  s.instagramUrl  ?? prev.instagramUrl,
-            primaryColor:  s.primaryColor  || prev.primaryColor,
-            sportsOffered: s.sportsOffered || prev.sportsOffered,
-            galleryImages: (() => {
-              try {
-                const parsed = typeof s.galleryImages === 'string'
-                  ? JSON.parse(s.galleryImages)
-                  : s.galleryImages;
-                return Array.isArray(parsed) && parsed.length > 0 ? parsed : prev.galleryImages;
-              } catch { return prev.galleryImages; }
-            })(),
-            pwaName: s.pwaName || prev.pwaName,
-          }));
+          if (!s) return
+          setConfig((prev) => buildConfig(s, prev))
         })
-        .catch(() => {});
-
-    load(); // immediate on mount
+        .catch(() => {})
 
     const handleVisibility = () => {
-      if (document.visibilityState === "visible") load();
-    };
-    const handleSettingsUpdated = () => {
-      load();
-    };
+      if (document.visibilityState === "visible") load()
+    }
+    const handleSettingsUpdated = () => { load() }
 
-    document.addEventListener("visibilitychange", handleVisibility);
-    window.addEventListener("settingsUpdated", handleSettingsUpdated);
+    document.addEventListener("visibilitychange", handleVisibility)
+    window.addEventListener("settingsUpdated", handleSettingsUpdated)
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("settingsUpdated", handleSettingsUpdated);
-    };
-  }, []);
-
+      document.removeEventListener("visibilitychange", handleVisibility)
+      window.removeEventListener("settingsUpdated", handleSettingsUpdated)
+    }
+  }, [])
 
   return (
     <TurfContext.Provider
