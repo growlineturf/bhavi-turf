@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   Settings, Save, Loader2, Image, Trophy, Globe, CreditCard,
-  MapPin, Instagram, Clock, Palette, Eye, EyeOff, ExternalLink,
+  MapPin, Instagram, Clock, Palette, Eye, EyeOff,
   Plus, Trash2, ChevronUp, ChevronDown, GalleryHorizontal,
 } from 'lucide-react'
 
@@ -79,20 +79,97 @@ function Field({
   )
 }
 
-/* ─── Image preview field ──────────────────────────────────── */
-function ImageUrlField({
-  label, value, onChange, placeholder, hint,
+/* ─── Image upload + URL field ─────────────────────────────── */
+function ImageUploadField({
+  label, value, onChange, hint, accept = 'image/*',
 }: {
   label: string; value: string; onChange: (v: string) => void
-  placeholder?: string; hint?: string
+  hint?: string; accept?: string
 }) {
+  const [uploading, setUploading] = useState(false)
+  const [uploadErr, setUploadErr] = useState('')
   const [preview, setPreview] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const handleFile = async (file: File) => {
+    setUploading(true)
+    setUploadErr('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/assets/upload', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok || !json.url) throw new Error(json.error || 'Upload failed')
+      onChange(json.url)
+    } catch (e: unknown) {
+      setUploadErr(e instanceof Error ? e.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    const file = e.dataTransfer.files[0]
+    if (file) handleFile(file)
+  }
+
+  const currentImg = value
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <label className="block text-[11px] font-bold text-zinc-400 uppercase tracking-widest">
         {label}
       </label>
+
+      {/* Current image preview */}
+      {currentImg && (
+        <div className="relative rounded-xl overflow-hidden border border-zinc-700 bg-zinc-900" style={{ height: 120 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={currentImg} alt="Current" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2">
+            <span className="text-[10px] text-zinc-300 font-medium">Current image</span>
+          </div>
+        </div>
+      )}
+
+      {/* Drop zone / upload button */}
+      <div
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+        className="border-2 border-dashed border-zinc-700 hover:border-blue-500/60 rounded-xl p-4 text-center cursor-pointer transition group"
+        onClick={() => inputRef.current?.click()}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept={accept}
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+        />
+        {uploading ? (
+          <div className="flex items-center justify-center gap-2 text-blue-400 text-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Uploading…
+          </div>
+        ) : (
+          <>
+            <div className="text-2xl mb-1">📤</div>
+            <p className="text-xs font-semibold text-zinc-300 group-hover:text-white transition">
+              Click or drag & drop to upload
+            </p>
+            <p className="text-[10px] text-zinc-600 mt-0.5">Any format · Any size</p>
+          </>
+        )}
+      </div>
+      {uploadErr && <p className="text-red-400 text-[11px]">{uploadErr}</p>}
+
+      {/* OR paste URL fallback */}
+      <div className="flex items-center gap-2">
+        <div className="h-px flex-1 bg-zinc-800" />
+        <span className="text-[10px] text-zinc-600 font-medium">or paste URL</span>
+        <div className="h-px flex-1 bg-zinc-800" />
+      </div>
       <div className="flex items-center gap-2">
         <div className="flex-1 flex items-center bg-zinc-800/60 border border-zinc-700/80 rounded-xl overflow-hidden focus-within:border-blue-500 transition">
           <Image className="h-4 w-4 text-zinc-600 ml-3 shrink-0" />
@@ -100,34 +177,28 @@ function ImageUrlField({
             type="url"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder ?? 'https://...'}
-            className="flex-1 bg-transparent px-3 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none"
+            placeholder="https://..."
+            className="flex-1 bg-transparent px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none"
           />
           {value && (
-            <a href={value} target="_blank" rel="noreferrer" className="px-3 text-zinc-500 hover:text-zinc-300 transition">
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
+            <button type="button" onClick={() => setPreview(p => !p)} className="px-3 text-zinc-500 hover:text-zinc-300 transition" title="Preview">
+              {preview ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            </button>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => setPreview((p) => !p)}
-          className="h-11 w-11 flex items-center justify-center rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-white transition shrink-0"
-          title={preview ? 'Hide preview' : 'Show preview'}
-        >
-          {preview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
+        {value && (
+          <button type="button" onClick={() => onChange('')} className="h-9 w-9 flex items-center justify-center rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-500 hover:text-red-400 transition shrink-0" title="Clear">
+            ✕
+          </button>
+        )}
       </div>
-      {hint && <p className="text-[10px] text-zinc-600">{hint}</p>}
       {preview && value && (
-        <div className="relative rounded-xl overflow-hidden border border-zinc-700 mt-2" style={{ height: 140 }}>
+        <div className="rounded-xl overflow-hidden border border-zinc-700" style={{ height: 100 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-          <div className="absolute inset-0 flex items-center justify-center text-zinc-600 text-xs bg-zinc-900">
-            Image preview
-          </div>
+          <img src={value} alt="URL Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
         </div>
       )}
+      {hint && <p className="text-[10px] text-zinc-600">{hint}</p>}
     </div>
   )
 }
@@ -290,11 +361,10 @@ export default function SettingsPage() {
               </p>
             </div>
           </div>
-          <ImageUrlField
-            label="Custom Logo Image URL (Optional)"
+          <ImageUploadField
+            label="Logo Image (Click to upload or paste URL)"
             value={form.logoUrl}
             onChange={set('logoUrl')}
-            placeholder="https://your-cdn.com/logo.png"
             hint="Leave empty to use the default BHAVI TURF shield logo."
           />
           <Field
@@ -308,12 +378,11 @@ export default function SettingsPage() {
 
         {/* ── 3. Hero Section ──────────────────────────────── */}
         <Section icon={Globe} title="Hero / Home Banner">
-          <ImageUrlField
-            label="Banner Image URL"
+          <ImageUploadField
+            label="Hero Banner Image (Click to upload or paste URL)"
             value={form.heroBannerUrl}
             onChange={set('heroBannerUrl')}
-            placeholder="https://images.unsplash.com/photo-..."
-            hint="Use a high-res landscape image (1600×900+). Unsplash, Cloudinary, or any CDN URL works. No upload needed."
+            hint="Use a high-res landscape photo. Recommended: 1600x900 or wider."
           />
           <Field
             label="Hero Title"
@@ -366,7 +435,7 @@ export default function SettingsPage() {
 
         {/* ── 5. Social & Location ─────────────────────────── */}
         <Section icon={MapPin} title="Social & Location">
-          <ImageUrlField
+          <Field
             label="Google Maps URL"
             value={form.googleMapsUrl}
             onChange={set('googleMapsUrl')}

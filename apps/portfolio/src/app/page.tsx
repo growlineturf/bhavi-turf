@@ -31,7 +31,7 @@ export default function HomePage() {
       <InstallPWABanner appName={config.pwaName || "BHAVI"} />
 
       {/* Hero Section */}
-      <section className="relative w-full overflow-hidden min-h-[85vh] flex items-center justify-center">
+      <section className="relative w-full overflow-hidden min-h-[100svh] sm:min-h-[85vh] flex items-center justify-center">
         {/* Background Image with Dark Overlay */}
         <div
           className="absolute inset-0 bg-cover bg-center transition-all duration-700 filter brightness-[0.4]"
@@ -39,24 +39,24 @@ export default function HomePage() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent"></div>
 
-        <div className="relative z-10 mx-auto max-w-5xl px-4 py-20 text-center space-y-6">
+        <div className="relative z-10 w-full max-w-5xl mx-auto px-5 py-24 sm:py-20 text-center space-y-5">
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-950/50 px-4 py-1.5 text-xs font-extrabold text-blue-400 backdrop-blur-md">
-            <Sparkles className="h-3.5 w-3.5" />
+            <Sparkles className="h-3.5 w-3.5 shrink-0" />
             <span>Indoor Cricket Turf • {config.city}</span>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-white max-w-4xl mx-auto leading-[1.1]">
+          <h1 className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tight text-white max-w-4xl mx-auto leading-[1.1] px-2">
             {config.heroTitle}
           </h1>
 
-          <p className="text-base sm:text-xl text-zinc-300 max-w-2xl mx-auto font-medium leading-relaxed">
+          <p className="text-sm sm:text-lg text-zinc-300 max-w-2xl mx-auto font-medium leading-relaxed px-2">
             {config.heroTagline}
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-2 px-4 sm:px-0">
             <Link
               href="/book"
-              className="btn-pill flex items-center justify-center gap-2.5 w-full sm:w-auto bg-blue-600 px-8 py-4 text-base font-extrabold text-white shadow-2xl shadow-blue-600/40 hover:bg-blue-500 hover:scale-105 transition"
+              className="btn-pill flex items-center justify-center gap-2.5 w-full sm:w-auto bg-blue-600 px-8 py-4 text-sm font-extrabold text-white shadow-2xl shadow-blue-600/40 hover:bg-blue-500 hover:scale-105 transition"
             >
               Book Now
               <ArrowRight className="h-5 w-5" />
@@ -64,7 +64,7 @@ export default function HomePage() {
 
             <Link
               href="/gallery"
-              className="btn-pill flex items-center justify-center gap-2 w-full sm:w-auto border border-zinc-700 bg-zinc-900/80 px-8 py-4 text-base font-extrabold text-zinc-200 hover:text-white hover:border-zinc-500 hover:bg-zinc-800 transition"
+              className="btn-pill flex items-center justify-center gap-2 w-full sm:w-auto border border-zinc-700 bg-zinc-900/80 px-8 py-4 text-sm font-extrabold text-zinc-200 hover:text-white hover:border-zinc-500 hover:bg-zinc-800 transition"
             >
               Explore Gallery
             </Link>
