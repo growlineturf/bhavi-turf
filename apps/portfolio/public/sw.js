@@ -1,4 +1,4 @@
-const CACHE = 'turf-admin-v2';
+const CACHE = 'turf-admin-v3';
 const OFFLINE_URLS = [
   '/admin',
   '/admin/today',

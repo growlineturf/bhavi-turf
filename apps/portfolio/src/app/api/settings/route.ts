@@ -19,12 +19,20 @@ async function ensureColumns(sql: any) {
   await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS "email"         TEXT NOT NULL DEFAULT 'bhaviturf@gmail.com'`
 }
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET() {
   const sql = neon(process.env.DATABASE_URL!)
   try {
     await ensureColumns(sql)
     const rows = await sql`SELECT * FROM settings WHERE id='singleton' LIMIT 1`
-    return NextResponse.json(rows[0] ?? null)
+    return NextResponse.json(rows[0] ?? null, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      },
+    })
   } catch (e) {
     console.error(e)
     return NextResponse.json(null, { status: 500 })

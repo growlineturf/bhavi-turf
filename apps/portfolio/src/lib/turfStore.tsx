@@ -49,8 +49,7 @@ const DEFAULT_CONFIG: TurfConfig = {
   city: "Mannan Nagar, Neyveli",
   heroTitle: "Welcome to BHAVI TURF",
   heroTagline: "Premium Indoor Cricket Turf with Bowling Machine",
-  heroBannerUrl:
-    "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=1600&q=80",
+  heroBannerUrl: "",
   gpayNumber: "9876543210",
   upiId: "9876543210@gpay",
   advanceAmount: 500,
@@ -112,24 +111,24 @@ function buildConfig(s: any, prev: TurfConfig): TurfConfig {
   if (!s) return prev
   return {
     ...prev,
-    turfName:      s.turfName      || prev.turfName,
-    city:          s.city          || prev.city,
-    gpayNumber:    s.gpayNumber    || prev.gpayNumber,
+    turfName:      s.turfName !== undefined && s.turfName !== '' ? s.turfName : prev.turfName,
+    city:          s.city !== undefined && s.city !== '' ? s.city : prev.city,
+    gpayNumber:    s.gpayNumber !== undefined ? s.gpayNumber : prev.gpayNumber,
     upiId:         s.gpayNumber ? `${s.gpayNumber}@gpay` : prev.upiId,
     advanceAmount: s.advanceAmount != null ? Number(s.advanceAmount) : prev.advanceAmount,
     whatsappNumber: s.whatsappNumber
       ? `91${s.whatsappNumber.replace(/\D/g, "").slice(-10)}`
       : prev.whatsappNumber,
-    email:         s.email         || prev.email,
-    heroTitle:     s.heroTitle     ?? prev.heroTitle,
-    heroTagline:   s.heroTagline   ?? prev.heroTagline,
-    heroBannerUrl: s.heroBannerUrl || prev.heroBannerUrl,
-    logoUrl:       s.logoUrl       || "/logo.png",
-    logoText:      s.logoText      ?? prev.logoText,
-    openingHours:  s.openingHours  || prev.openingHours,
-    googleMapsUrl: s.googleMapsUrl ?? prev.googleMapsUrl,
-    instagramUrl:  s.instagramUrl  ?? prev.instagramUrl,
-    primaryColor:  s.primaryColor  || prev.primaryColor,
+    email:         s.email !== undefined && s.email !== '' ? s.email : prev.email,
+    heroTitle:     s.heroTitle !== undefined ? s.heroTitle : prev.heroTitle,
+    heroTagline:   s.heroTagline !== undefined ? s.heroTagline : prev.heroTagline,
+    heroBannerUrl: s.heroBannerUrl !== undefined ? s.heroBannerUrl : prev.heroBannerUrl,
+    logoUrl:       s.logoUrl || "/logo.png",
+    logoText:      s.logoText !== undefined ? s.logoText : prev.logoText,
+    openingHours:  s.openingHours || prev.openingHours,
+    googleMapsUrl: s.googleMapsUrl !== undefined ? s.googleMapsUrl : prev.googleMapsUrl,
+    instagramUrl:  s.instagramUrl !== undefined ? s.instagramUrl : prev.instagramUrl,
+    primaryColor:  s.primaryColor || prev.primaryColor,
     sportsOffered: s.sportsOffered || prev.sportsOffered,
     galleryImages: (() => {
       try {

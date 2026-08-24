@@ -107,6 +107,9 @@ export const viewport: Viewport = {
   themeColor: "#09090b",
 };
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 /* ── Server-side settings fetch — eliminates flash of default hero ── */
 async function fetchInitialSettings() {
   try {

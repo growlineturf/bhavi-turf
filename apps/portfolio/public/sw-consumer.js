@@ -1,4 +1,4 @@
-const CACHE = 'bhavi-consumer-v1';
+const CACHE = 'bhavi-consumer-v2';
 const SHELL = [
   '/',
   '/book',
