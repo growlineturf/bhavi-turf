@@ -2,8 +2,8 @@
 
 import { useSession, signOut } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { Trophy, Clock, Calendar, Grid3x3, BarChart3, Settings, LogOut } from 'lucide-react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { Trophy, Clock, Calendar, Grid3x3, BarChart3, Settings, LogOut, X, Download, Share } from 'lucide-react'
 import Link from 'next/link'
 
 const NAV = [
@@ -13,6 +13,155 @@ const NAV = [
   { href: '/admin/revenue',  label: 'Revenue',  icon: BarChart3 },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]
+
+/* ── Admin PWA Install Banner ─────────────────────────────── */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let adminDeferredPrompt: any = null
+
+function AdminInstallBanner() {
+  const [show, setShow] = useState(false)
+  const [iosStep, setIosStep] = useState(false)
+  const platformRef = useRef<'android' | 'ios' | null>(null)
+  const canShowRef = useRef(false)
+
+  const isDismissed = () => !!localStorage.getItem('admin-pwa-dismissed')
+
+  const doShow = useCallback(() => {
+    setIosStep(false)
+    setShow(true)
+  }, [])
+
+  const dismiss = useCallback(() => {
+    setShow(false)
+    localStorage.setItem('admin-pwa-dismissed', '1')
+  }, [])
+
+  useEffect(() => {
+    if (isDismissed()) return
+    const standalone = window.matchMedia('(display-mode: standalone)').matches
+      || (window.navigator as { standalone?: boolean }).standalone === true
+    if (standalone) return
+
+    const ua = navigator.userAgent
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const isIOS = /iPhone|iPad|iPod/i.test(ua) && !(window as any).MSStream
+    const isAndroid = /Android/i.test(ua)
+
+    if (isIOS) {
+      const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua)
+      if (!isSafari) return
+      platformRef.current = 'ios'
+      canShowRef.current = true
+      const t = setTimeout(doShow, 3000)
+      return () => clearTimeout(t)
+    } else if (isAndroid) {
+      platformRef.current = 'android'
+      const handler = (e: Event) => {
+        e.preventDefault()
+        adminDeferredPrompt = e
+        canShowRef.current = true
+        setTimeout(doShow, 3000)
+      }
+      window.addEventListener('beforeinstallprompt', handler as EventListener)
+      return () => window.removeEventListener('beforeinstallprompt', handler as EventListener)
+    }
+  }, [doShow])
+
+  const installAndroid = async () => {
+    if (!adminDeferredPrompt) return
+    adminDeferredPrompt.prompt()
+    const { outcome } = await adminDeferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      adminDeferredPrompt = null
+      canShowRef.current = false
+      dismiss()
+    }
+  }
+
+  if (!show) return null
+  const platform = platformRef.current
+  if (!platform) return null
+
+  if (platform === 'android') {
+    return (
+      <div className="fixed top-3 left-3 right-3 z-[9999] flex items-center justify-between
+                      gap-3 rounded-2xl bg-zinc-900 border border-blue-800/60 px-4 py-3
+                      shadow-2xl shadow-black/60 animate-in slide-in-from-top-4 duration-300">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="BHAVI Admin"
+            className="h-10 w-10 rounded-xl border border-zinc-700 object-contain p-0.5 shrink-0 bg-black" />
+          <div className="min-w-0">
+            <p className="text-white font-bold text-sm truncate">BHAVI Admin</p>
+            <p className="text-zinc-400 text-xs">Install the Admin App for easy access</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={installAndroid}
+            className="flex items-center gap-1.5 bg-blue-700 hover:bg-blue-600 active:scale-95
+                       text-white text-xs font-bold px-3 py-2 rounded-xl transition">
+            <Download size={13} /> Install
+          </button>
+          <button onClick={dismiss} className="text-zinc-500 hover:text-zinc-300 transition p-1">
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // iOS
+  return (
+    <div className="fixed top-3 left-3 right-3 z-[9999] rounded-2xl bg-zinc-900
+                    border border-blue-800/60 p-4 shadow-2xl shadow-black/60
+                    animate-in slide-in-from-top-4 duration-300">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="BHAVI Admin"
+            className="h-10 w-10 rounded-xl border border-zinc-700 object-contain p-0.5 shrink-0 bg-black" />
+          <div>
+            <p className="text-white font-bold text-sm">BHAVI Admin</p>
+            <p className="text-zinc-400 text-xs">Install Admin App for quick access</p>
+          </div>
+        </div>
+        <button onClick={dismiss} className="text-zinc-500 hover:text-zinc-300 transition p-1 shrink-0 mt-0.5">
+          <X size={16} />
+        </button>
+      </div>
+      {!iosStep ? (
+        <button onClick={() => setIosStep(true)}
+          className="w-full flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-600
+                     active:scale-[0.98] text-white text-sm font-bold py-2.5 rounded-xl transition">
+          <Share size={14} /> How to Install Admin App
+        </button>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-zinc-300 text-xs font-semibold">In Safari, follow these steps:</p>
+          <ol className="space-y-1.5 text-xs text-zinc-400">
+            <li className="flex items-start gap-2">
+              <span className="bg-blue-700 text-white rounded-full w-4 h-4 flex items-center
+                               justify-center text-[10px] font-bold shrink-0 mt-0.5">1</span>
+              Tap the <strong className="text-white mx-1">Share</strong> button
+              <Share size={12} className="text-zinc-300 shrink-0 mt-0.5 ml-0.5" />
+              at the bottom of Safari
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="bg-blue-700 text-white rounded-full w-4 h-4 flex items-center
+                               justify-center text-[10px] font-bold shrink-0 mt-0.5">2</span>
+              Tap <strong className="text-white">&ldquo;Add to Home Screen&rdquo;</strong>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="bg-blue-700 text-white rounded-full w-4 h-4 flex items-center
+                               justify-center text-[10px] font-bold shrink-0 mt-0.5">3</span>
+              Tap <strong className="text-white">&ldquo;Add&rdquo;</strong> — done! ✅
+            </li>
+          </ol>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const { status } = useSession()
@@ -108,6 +257,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-row">
+
+      {/* Admin PWA install prompt — only for logged-in admins */}
+      <AdminInstallBanner />
 
       {/* Desktop sidebar — shown only on wide screens */}
       {!isMobile && (

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import InstallPWABanner from "@/components/InstallPWABanner";
 
 /* ─── Types ───────────────────────────────────────────────── */
 export type TimeFilter = "twilight" | "morning" | "noon" | "evening";
@@ -185,6 +186,7 @@ export function TurfProvider({
       value={{ config, dates, selectedDate, setSelectedDate, selectedTimeFilter, setSelectedTimeFilter }}
     >
       {children}
+      <InstallPWABanner appName={config.pwaName || "BHAVI"} />
     </TurfContext.Provider>
   );
 }

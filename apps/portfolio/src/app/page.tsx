@@ -2,9 +2,9 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import InstallPWABanner from "@/components/InstallPWABanner";
 
 import { useTurf } from "@/lib/turfStore";
 import {
@@ -23,12 +23,17 @@ import {
 
 export default function HomePage() {
   const { config } = useTurf();
+  const router = useRouter();
+
+  const handleBookNow = () => {
+    // Trigger install prompt, then navigate to booking page
+    window.dispatchEvent(new Event("show-pwa-install"));
+    setTimeout(() => router.push("/book"), 800);
+  };
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-blue-600 selection:text-white">
       <Navbar />
-      {/* Floating install prompt — shows automatically on Android & iOS */}
-      <InstallPWABanner appName={config.pwaName || "BHAVI"} />
 
       {/* Hero Section */}
       <section className="relative w-full overflow-hidden min-h-[100svh] sm:min-h-[85vh] flex items-center justify-center">
@@ -54,13 +59,13 @@ export default function HomePage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-2 px-4 sm:px-0">
-            <Link
-              href="/book"
-              className="btn-pill flex items-center justify-center gap-2.5 w-full sm:w-auto bg-blue-600 px-8 py-4 text-sm font-extrabold text-white shadow-2xl shadow-blue-600/40 hover:bg-blue-500 hover:scale-105 transition"
+            <button
+              onClick={handleBookNow}
+              className="btn-pill flex items-center justify-center gap-2.5 w-full sm:w-auto bg-blue-600 px-8 py-4 text-sm font-extrabold text-white shadow-2xl shadow-blue-600/40 hover:bg-blue-500 hover:scale-105 active:scale-100 transition cursor-pointer"
             >
               Book Now
               <ArrowRight className="h-5 w-5" />
-            </Link>
+            </button>
 
             <Link
               href="/gallery"
